@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mi STI · Ensayos de mampostería</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f4f2; --surface:#ffffff; --surface-2:#eceeeb; --line:#d6d9d4; --line-strong:#b9beb7;
+  --ink:#1b2126; --ink-2:#4a535a; --ink-3:#737c83;
+  --accent:#2c5f8a; --accent-ink:#ffffff; --accent-soft:#e3ecf4;
+  --good:#0ca30c; --good-ink:#0b6e0b; --good-bg:#e5f4e3;
+  --warn:#fab219; --warn-ink:#7a5300; --warn-bg:#fdf1d4;
+  --serious:#ec835a; --serious-ink:#9a3f17; --serious-bg:#fbe6dc;
+  --crit:#d03b3b; --crit-ink:#a02525; --crit-bg:#f9e0e0;
+  --muted-bg:#e7e9e6; --late:#8a5cc2; --late-ink:#5f3a8c; --late-bg:#efe7f8;
+  --shadow:0 1px 2px rgba(20,30,40,.06),0 6px 20px rgba(20,30,40,.08);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;padding-inline:clamp(16px,3vw,32px);padding-block:0 48px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0}
+h2{font-size:20px}
+h3{font-size:16px}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);font-weight:600}
+.muted{color:var(--ink-3)}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;padding-block:22px 18px;border-bottom:2px solid var(--ink)}
+.top h1{font-size:clamp(26px,4vw,36px);line-height:1.05}
+.top h1 span{color:var(--accent)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta b{font-weight:600;color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line-strong);background:var(--surface);padding:8px 14px;border-radius:6px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--crit-ink);border-color:var(--crit)}
+.btn.small{padding:4px 9px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.banner{padding:10px 14px;border-radius:6px;background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn)}
+
+/* status summary */
+.statusbar{display:flex;flex-wrap:wrap;gap:8px}
+.schip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;min-width:140px;text-align:left}
+.schip .n{font-family:var(--f-display);font-size:26px;font-weight:600;line-height:1}
+.schip .l{font-size:12px;color:var(--ink-2);line-height:1.2}
+.schip[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+
+/* class cards */
+.classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.ccard header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ccard .fc{font-family:var(--f-display);font-size:24px;font-weight:600}
+.ccard .fc small{font-size:13px;color:var(--ink-3);font-family:var(--f-body);font-weight:400}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 12px}
+.stats div{display:flex;flex-direction:column}
+.stats .k{font-size:11px;color:var(--ink-3)}
+.stats .v{font-family:var(--f-mono);font-size:15px;font-weight:500}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;display:flex;gap:2px}
+.bar i{display:block;height:100%}
+
+/* layout grid */
+.grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel > header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* drop */
+.drop{border:1.5px dashed var(--line-strong);border-radius:8px;padding:22px 16px;text-align:center;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:background .15s,border-color .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font-family:var(--f-display);font-size:17px;font-weight:600}
+.drop input{display:none}
+.review{display:flex;flex-direction:column;gap:12px}
+.rep{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.rep > .rh{background:var(--surface-2);padding:10px 12px;display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}
+.rep > .rh b{font-family:var(--f-display);font-size:16px;font-weight:600}
+.warns{display:flex;flex-direction:column;gap:4px;padding:8px 12px 0}
+.warn{font-size:12.5px;padding:6px 9px;border-radius:5px;background:var(--serious-bg);color:var(--serious-ink)}
+.warn.crit{background:var(--crit-bg);color:var(--crit-ink)}
+.warn.info{background:var(--accent-soft);color:var(--ink-2)}
+.ritem{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:10px 12px;border-top:1px solid var(--line)}
+.ritem:first-of-type{border-top:0}
+.ritem .rt{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.ritem .rv{grid-column:2;font-size:12.5px;color:var(--ink-2)}
+.ritem .fields{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}
+.ritem .fields label{display:flex;flex-direction:column;font-size:11px;color:var(--ink-3);gap:2px}
+.ritem .fields input,.ritem .fields select{padding:4px 6px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);font-size:13px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:var(--surface-2);color:var(--ink-2)}
+.tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.add{background:var(--good-bg);color:var(--good-ink)}
+.tag.dup{background:var(--muted-bg);color:var(--ink-3)}
+.tag.diff{background:var(--serious-bg);color:var(--serious-ink)}
+.rfoot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+/* alerts */
+.alerts{display:flex;flex-direction:column;gap:6px;max-height:430px;overflow:auto}
+.alert{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-radius:6px;border:1px solid var(--line);background:var(--surface);text-align:left;width:100%}
+.alert:hover{border-color:var(--ink-3)}
+.alert[data-open]{cursor:pointer}
+.alert.rev{opacity:.7}
+.alert .t{font-size:13px}
+.alert .t small{display:block;color:var(--ink-3);font-size:12px}
+.alert .no{font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
+.avisos{display:flex;flex-direction:column;gap:4px;padding-bottom:6px;margin-bottom:2px;border-bottom:1px dashed var(--line)}
+.aviso summary{cursor:pointer;font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px;flex-wrap:wrap;list-style:none;padding:3px 0}
+.aviso summary::-webkit-details-marker{display:none}
+.aviso summary::after{content:"▸";color:var(--ink-3);font-size:11px}
+.aviso[open] summary::after{content:"▾"}
+.avl{font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px;padding:2px 0 6px 4px}
+.avb{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:1px 6px;font-size:11.5px;font-family:var(--f-mono)}
+.avb:hover{border-color:var(--ink-3)}
+.avline{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.avline.done,.avi.done{opacity:.6}
+.avn{display:flex;flex-wrap:wrap;gap:4px}
+.avi{display:inline-flex;align-items:stretch}
+.avi .avb{border-radius:4px 0 0 4px}
+.avx{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:1px 7px;font-size:11.5px;color:var(--good-ink);white-space:nowrap}
+.avx:hover{border-color:var(--good)}
+.avx.sm{border-left:0;border-radius:0 4px 4px 0;padding:1px 5px}
+.avlink{border:0;background:none;padding:0;font-size:11.5px;color:var(--accent);text-decoration:underline}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:2px 8px 2px 6px;border-radius:999px;white-space:nowrap}
+.chip .ic{font-family:var(--f-mono);font-size:11px;width:15px;height:15px;border-radius:50%;display:inline-grid;place-items:center;color:#fff}
+.c-good{background:var(--good-bg);color:var(--good-ink)} .c-good .ic{background:var(--good)}
+.c-warn{background:var(--warn-bg);color:var(--warn-ink)} .c-warn .ic{background:#c98a00}
+.c-serious{background:var(--serious-bg);color:var(--serious-ink)} .c-serious .ic{background:#d0643a}
+.c-crit{background:var(--crit-bg);color:var(--crit-ink)} .c-crit .ic{background:var(--crit)}
+.c-muted{background:var(--muted-bg);color:var(--ink-2)} .c-muted .ic{background:var(--ink-3)}
+.c-late{background:var(--late-bg);color:var(--late-ink)} .c-late .ic{background:var(--late)}
+.c-apr{background:var(--accent-soft);color:var(--accent)} .c-apr .ic{background:var(--accent)}
+
+/* chart */
+.chartbox{position:relative}
+.chartbox svg{width:100%;height:auto;display:block}
+.chartbox{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#fff}
+.chartbox svg{min-width:760px}
+.ctools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctools select{padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+.ctools label{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--ink-2)}
+.impbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:8px}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);padding:7px 9px;border-radius:6px;font-size:12px;line-height:1.35;box-shadow:var(--shadow);max-width:240px;z-index:3}
+.tip b{font-family:var(--f-mono)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* table */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters select,.filters input{padding:6px 8px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+.filters input{min-width:0;flex:1 1 180px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:1080px}
+th,td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+thead th{position:sticky;top:0;background:var(--surface-2);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);font-weight:600;white-space:nowrap}
+thead tr.grp th{text-align:center;border-bottom:0;padding-bottom:0;color:var(--ink-3)}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--accent-soft)}
+td.no{font-family:var(--f-mono);font-weight:500;position:sticky;left:0;background:var(--surface);z-index:1}
+tbody tr:hover td.no{background:var(--accent-soft)}
+td.loc{max-width:240px}
+td.loc .e{font-weight:600;font-size:12.5px}
+td.loc .l{color:var(--ink-2);font-size:12.5px}
+.ed{font-size:10.5px;font-weight:600;letter-spacing:.05em;padding:1px 5px;border-radius:3px;border:1px solid var(--line-strong);color:var(--ink-2);margin-left:4px}
+.res .v{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
+.res .pct{font-size:12px;color:var(--ink-2);margin-left:4px}
+.res .cyl{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.res .flag{color:var(--serious-ink);font-weight:700;margin-left:3px}
+.below{color:var(--crit-ink)}
+.empty{padding:36px 16px;text-align:center;color:var(--ink-3)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,15,20,.4);z-index:20}
+.sheet{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--surface);z-index:21;box-shadow:var(--shadow);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet .sh{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);gap:10px}
+.sheet .sb{overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:16px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.form label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-2)}
+.form label.full{grid-column:1/-1}
+.form input,.form select,.form textarea{padding:7px 9px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface)}
+.elist{display:flex;flex-direction:column;gap:8px}
+.eitem{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 10px}
+.eitem .h{font-weight:600}
+.eitem .d{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2)}
+.addE{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.addE label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--ink-2)}
+.addE input{padding:6px 8px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);min-width:0}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--crit-bg);color:var(--crit-ink);padding:8px 10px;border-radius:6px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;box-shadow:var(--shadow);z-index:40;font-size:13.5px;max-width:calc(100% - 32px)}
+details.crit{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 16px}
+details.crit summary{cursor:pointer;font-family:var(--f-display);font-size:17px;font-weight:600}
+details.crit .body{max-width:75ch;color:var(--ink-2);display:flex;flex-direction:column;gap:8px;margin-top:10px}
+details.crit table{min-width:0;width:auto}
+.reps{display:flex;flex-direction:column;gap:6px}
+.repline{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+/* tabla tipo Excel */
+td.no{padding:0!important}
+td.no .nob{display:flex;align-items:stretch;min-height:46px}
+td.no .nob i{width:5px;flex:none}
+td.no .nob span{flex:1;display:grid;place-items:center;font-family:var(--f-mono);font-size:16px;font-weight:600;padding:0 12px}
+.res .cyl .p{color:var(--ink-3)}
+.xwrap{overflow:auto;max-height:78vh;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface)}
+table.xt{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:12.5px}
+.xt th,.xt td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 7px;text-align:center;vertical-align:middle}
+.xt thead{position:sticky;top:0;z-index:3}
+.xt thead th{position:static;min-width:54px;max-width:120px;background:#e4e8ec;color:var(--ink);font-size:11.5px;font-weight:600;line-height:1.2;text-transform:none;letter-spacing:0;white-space:normal}
+.xt thead th.gT{background:#dde8f3}.xt thead th.gD{background:#dcefdc}.xt thead th.gP{background:#ece2f5}
+.xt td.gT{background:#f6f9fc}.xt td.gD{background:#f5fbf5}.xt td.gP{background:#faf7fd}
+.xt td.gT.b,.xt td.gD.b,.xt td.gP.b{border-left:2px solid var(--line-strong)}
+.xt th.b{border-left:2px solid var(--line-strong)}
+.xt tbody tr{cursor:pointer}
+.xt tbody tr:hover td{background:var(--accent-soft)!important}
+.xt .c-no{position:sticky;left:0;z-index:2;background:var(--surface);border-right:2px solid var(--line-strong);padding:0}
+.xt thead th.c-no{position:sticky;left:0;z-index:4;background:#e4e8ec;padding:5px 7px;min-width:70px}
+.xt .nob{display:flex;align-items:stretch;min-height:44px}
+.xt .nob i{width:5px;flex:none}
+.xt .nob span{flex:1;display:grid;place-items:center;font-family:var(--f-mono);font-size:16px;font-weight:600;color:var(--ink);padding:0 10px}
+.xt td.t{text-align:left;min-width:120px;max-width:230px;white-space:normal}
+.xt td.f{font-family:var(--f-mono);white-space:nowrap;font-size:12px;color:var(--ink-2)}
+.xt .cv{font-family:var(--f-mono);font-weight:500;white-space:nowrap}
+.xt .cp{font-family:var(--f-mono);font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.xt td.pr .cv{font-weight:700}
+.xt td.pc{font-family:var(--f-mono);font-weight:700;white-space:nowrap}
+.xt .lo,.xt .lo .cp{color:var(--crit-ink)!important}
+.xt .mid,.xt .mid .cp{color:var(--warn-ink)!important}
+.xt .ok{color:var(--good-ink)}
+.xt td.e0{color:var(--line-strong)}
+.xt .sub{font-size:10.5px;color:var(--ink-3);margin-top:2px;white-space:nowrap}
+.zrow{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center}
+.zrow input{padding:7px 9px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);min-width:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* pestañas por tipo de ensayo */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--line);overflow-x:auto}
+.tab{border:0;background:none;padding:10px 14px 9px;font-family:var(--f-display);font-size:17px;font-weight:600;color:var(--ink-3);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .cnt{font-family:var(--f-mono);font-size:11.5px;font-weight:500;background:var(--surface-2);color:var(--ink-2);border-radius:10px;padding:1px 7px}
+.tab .al.late{background:var(--late)}
+.tab .al{cursor:pointer;font-family:var(--f-mono);font-size:11.5px;font-weight:600;background:var(--crit);color:#fff;border-radius:10px;padding:1px 7px}
+.vals{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.vals .lo{color:var(--crit-ink);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px}
+.kv span:nth-child(odd){color:var(--ink-3)}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<script>
+/* Puente con Mi STI: el proyecto, la constructora, las torres y la paleta llegan por la URL. Cada proyecto guarda sus ensayos aparte. */
+window.STI=(function(){var q=new URLSearchParams(location.search);function j(k,d){try{return JSON.parse(q.get(k)||"")}catch(e){return d}}
+var th=j("th",{}),r=document.documentElement.style;
+if(th.accent){r.setProperty("--accent",th.accent);r.setProperty("--accent-ink",th.accentInk||"#fff");r.setProperty("--accent-soft",th.accentSoft||"#eef");}
+return{p:(q.get("p")||"demo").replace(/[^\w-]/g,""),proyecto:q.get("proy")||"Proyecto",obra:q.get("obra")||"",constructora:q.get("cons")||"",laboratorio:q.get("lab")||"",zonas:j("zonas",[]),embebida:window.self!==window.top};})();
+</script>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Supervisión técnica independiente · Control de ensayos · Mampostería estructural</div>
+      <h1>Control de ensayos <span id="hProy"></span></h1>
+      <div class="meta">
+        <span>Obra lab. <b class="mono" id="hObra"></b></span>
+        <span>Laboratorio <b id="hLab"></b></span>
+        <span>Constructora <b id="hCons"></b></span>
+        <span id="hZonas"></span>
+        <span id="syncState" class="muted">Conectando…</span>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnCfg" type="button">Editar proyecto</button>
+      <button class="btn" id="btnExpJ" type="button">Exportar proyecto</button>
+      <button class="btn" id="btnImpJ" type="button">Importar proyecto</button>
+      <input type="file" id="fileJ" accept=".json,application/json" hidden>
+      <button class="btn primary" id="btnExport" type="button">Exportar a Excel</button>
+      <button class="btn danger" id="btnReset" type="button">Borrar todo</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+  <div id="impBox" hidden></div>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Tipo de ensayo"></nav>
+
+  <section class="statusbar" id="statusbar" aria-label="Resumen por estado"></section>
+  <section class="classes" id="classes" aria-label="Resumen"></section>
+
+  <section class="grid2">
+    <div class="panel">
+      <header><h2>Cargar informes del laboratorio</h2><span class="muted" style="font-size:12px">PDF del laboratorio · uno o varios</span></header>
+      <label class="drop" id="drop" for="file">
+        <strong>Arrastra aquí los informes</strong>
+        <span class="muted">Cilindros de concreto, mortero y grout · unidades (compresión y absorción) · muretes. Se detecta el tipo de cada página.</span>
+        <input type="file" id="file" accept="application/pdf,.pdf" multiple>
+      </label>
+      <div id="review" class="review"></div>
+    </div>
+    <div class="panel">
+      <header><h2>Requiere atención</h2><span class="muted" id="alertCount" style="font-size:12px"></span></header>
+      <div class="alerts" id="alerts"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="chartPanel">
+    <header>
+      <h2 id="chartTitle">Gráfica de control</h2>
+      <div class="ctools">
+        <select id="cFc" aria-label="Clase"></select>
+        <label><input type="checkbox" id="cLbl" checked> Etiquetas de %</label>
+        <button class="btn small" type="button" id="btnJpg">Exportar imagen JPG</button>
+      </div>
+    </header>
+    <div class="muted" style="font-size:12.5px" id="chartNote"></div>
+    <div class="chartbox" id="chart"></div>
+  </section>
+
+  <section class="panel">
+    <header>
+      <h2 id="tableTitle">Tabla de control</h2>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="muted" id="countLbl" style="font-size:12px"></span><button class="btn small" id="btnNew" type="button">+ Muestra manual</button></div>
+    </header>
+    <div class="filters">
+      <select id="fEdif" aria-label="Edificio o zona"></select>
+      <select id="fFc" aria-label="Clase"></select>
+      <select id="fEst" aria-label="Estado"></select>
+      <select id="fSort" aria-label="Orden"><option value="asc">Por fecha (más antigua primero)</option><option value="desc">Más recientes primero</option><option value="cod">Por código de muestra</option></select>
+      <input id="fQ" type="search" placeholder="Buscar código, elemento o localización">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="crit" id="repsBox">
+    <summary>Informes cargados <span class="muted" id="repsCount" style="font-weight:400;font-size:14px"></span></summary>
+    <div class="reps" id="reps" style="margin-top:10px"></div>
+  </details>
+
+  <details class="crit">
+    <summary>Criterios de aceptación usados</summary>
+    <div class="body">
+      <p><b>Concreto</b> (y mortero de pega y grouting con el criterio «igual que concreto»), NSR-10 C.5.6.3.3. Un ensayo es el promedio de los cilindros o cubos de una muestra. Se exigen dos condiciones: <b>(a)</b> cada promedio de 3 ensayos consecutivos del mismo tipo y la misma resistencia especificada es ≥ f'c (f'cp, f'cr); <b>(b)</b> ningún ensayo es menor que f'c − 3,5 MPa (0,90 f'c si f'c &gt; 35 MPa).</p>
+      <p><b>Estados:</b> <i>Cumple</i>: la resistencia final es ≥ 100 % de la especificada (redondeada al % entero, como se muestra), sin importar el promedio. <i>Aceptable NSR</i>: bajo 100 % pero sobre el límite individual, con el promedio al día o sin ensayos suficientes. <i>Promedio bajo</i>: bajo 100 %, sobre el límite individual, y el promedio de su grupo queda bajo la resistencia especificada.</p>
+      <p><b>Estado a criterio:</b> solo las muestras en «Promedio bajo» tienen en la tabla un selector para pasarlas a «Aceptable NSR» a criterio del interventor, muestra por muestra. Una muestra bajo 100 % nunca se puede marcar como «Cumple». En la ficha se puede dejar una observación. El cálculo y los promedios no cambian.</p>
+      <p><b>Alertas:</b> «Requiere atención» lista lo que exige una acción (no cumple, promedio bajo, rotura atrasada). Arriba, en dos líneas compactas que se despliegan, están los avisos del laboratorio (calibración de equipos) y las muestras de la pestaña con dispersión alta (⚑). Cada aviso se puede marcar como revisado; al llegar un informe nuevo solo quedan pendientes los avisos nuevos. Una dispersión revisada vuelve a pendiente si la muestra recibe una rotura nueva con dispersión.</p>
+      <p><b>Resistencia final:</b> la mayor entre la rotura a 28 días y la de edad posterior o testigo. Si la edad posterior alcanza la resistencia, el estado se actualiza con ese resultado.</p>
+      <p><b>Unidades de mampostería</b> (NTC 4205-1, ensayos NTC 4017). Compresión sobre área neta para perforación vertical (PV) y sobre área bruta para PH y macizas: el promedio de 5 unidades ≥ mínimo promedio de la clase y cada unidad ≥ mínimo individual. Absorción en agua fría 24 h: promedio ≤ límite y cada unidad ≤ límite individual; se admite que una de las cinco supere ese límite hasta en 10 %.</p>
+      <table>
+        <thead><tr><th>Clase</th><th>Promedio 5 unidades</th><th>Unidad</th></tr></thead>
+        <tbody id="claseTbl"></tbody>
+      </table>
+      <p><b>Muretes (prismas, NTC 3495):</b> se usa la resistencia corregida por esbeltez (h/t) de cada prisma. Con el criterio «igual que concreto», cumple si el promedio corregido es ≥ f'm, igual que el % que calcula el laboratorio.</p>
+      <p><b>Opción NSR-10 D.3.8.2.1</b> (se elige en «Editar proyecto»): para mortero de pega, grouting y muretes, el promedio de los resultados debe ser ≥ la resistencia especificada y ningún resultado individual puede ser menor que el 80 % de ella. Es el numeral que suelen citar los informes de mortero del laboratorio. En este modo, la columna de promedio muestra el promedio acumulado de todos los resultados de la misma resistencia.</p>
+      <p><b>Dispersión:</b> en cilindros se marca con ⚑ si el rango supera 10,6 % del promedio (3 cilindros de 100×200 mm; 9,0 % para 2).</p>
+      <p><b>Solo cuentan resultados a 28 días o más:</b> una rotura temprana (3, 7 o 14 días) nunca da por cumplida la muestra, aunque supere la resistencia especificada.</p>
+      <p><b>Aprobada por concepto:</b> una muestra que no cumple, con promedio bajo o sin rotura puede aprobarse a mano con un soporte externo (concepto del diseñador estructural, ensayos destructivos o no destructivos, resultados del proveedor). Queda registrado el soporte, la referencia, quién lo emite y la fecha; los resultados de laboratorio no cambian.</p>
+      <p><b>Rotura atrasada:</b> pasaron más de 31 días desde la fundida o elaboración y no hay resultado a 28 días.</p>
+      <p class="muted">Los límites de unidades (clase y absorción) y la zona se ajustan en «Editar proyecto».</p>
+    </div>
+  </details>
+</div>
+
+<div id="tip" class="tip" hidden></div>
+<div id="scrim" class="scrim" hidden></div>
+<aside id="sheet" class="sheet" hidden aria-modal="true" role="dialog"></aside>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ===== Lectura de informes de laboratorio (formato compatible): cilindros (TC 01), unidades (TC 20), absorción (TC 16), prismas/muretes (TC 17) ===== */
+const MESES={ENERO:1,FEBRERO:2,MARZO:3,ABRIL:4,MAYO:5,JUNIO:6,JULIO:7,AGOSTO:8,SEPTIEMBRE:9,SETIEMBRE:9,OCTUBRE:10,NOVIEMBRE:11,DICIEMBRE:12};
+const pad2=n=>String(n).padStart(2,"0");
+const numCO=s=>parseFloat(String(s).replace(/\.(?=\d{3}(\D|$))/g,"").replace(",","."));
+const isNum=s=>/^\d+(,\d+)?$/.test(s);
+const isDate=s=>/^\d{4}-\d{1,2}-\d{1,2}$/.test(s);
+const normDate=s=>{const[y,m,d]=s.split("-");return`${y}-${pad2(m)}-${pad2(d)}`;};
+function clusterLines(toks,tol){const sorted=[...toks].sort((a,b)=>a.y-b.y);const lines=[];for(const t of sorted){const last=lines[lines.length-1];if(last&&Math.abs(t.y-last.y)<=tol)last.toks.push(t);else lines.push({y:t.y,toks:[t]});}lines.forEach(l=>l.toks.sort((a,b)=>a.x-b.x));return lines;}
+const ordYX=(a,b)=>Math.abs(a.y-b.y)>3?a.y-b.y:a.x-b.x;
+const normU=t=>String(t||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+const joinToks=ts=>ts.sort(ordYX).map(o=>o.s).join(" ").replace(/\s+/g," ").trim();
+
+function pageKind(txt){
+  const t=txt.toUpperCase();
+  if(/PRISMAS DE MAMPOSTER/.test(t))return"mur";
+  if(/ABSORCI[OÓ]N DE AGUA/.test(t))return"abs";
+  if(/UNIDADES DE ARCILLA|BLOQUES CER[AÁ]MICOS|NTC 4017/.test(t)&&/COMPRESI/.test(t))return"uni";
+  if(/CILINDROS|CUBOS|MORTERO|ESPEC[IÍ]MENES DE CONCRETO/.test(t)&&/COMPRESI/.test(t))return"cil";
+  return null;
+}
+function parseHeader(allText){
+  const txt=allText.replace(/\s+/g," ");const info={};let m;
+  m=txt.match(/(?:CILINDROS|PRISMAS|ESPEC[IÍ]MENES|COMPRESI[OÓ]N|ABSORCI[OÓ]N)\s+No\.\s*(\d+)\s*-\s*(\d+)/i);if(m){info.obra=m[1];info.numero=parseInt(m[2],10);}
+  m=txt.match(/C[OÓ]DIGO DE OBRA:\s*(\d+)/i);if(m)info.obra=m[1];
+  m=txt.match(/ORDEN DE TRABAJO No\.\s*(\d+)\s*-\s*(\d+)/i);if(m)info.ot=`${m[1]}-${m[2]}`;
+  m=txt.match(/ENSAYO:\s*(\d{1,2})\s+DE\s+([A-ZÁÉÍÓÚa-záéíóú]+)\s+DE\s+(\d{4})/i);
+  if(m){const mes=MESES[m[2].toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")];if(mes)info.fechaEnsayo=`${m[3]}-${pad2(mes)}-${pad2(m[1])}`;}
+  m=txt.match(/emisi.n de informe:\s*(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i);if(m)info.fechaEmision=normDate(m[1].replace(/\//g,"-"));
+  m=txt.match(/formato:\s*TC\s*(\d+)/i);if(m)info.formato="TC"+m[1];
+  m=txt.match(/PROYECTO:\s*(.+?)\s+DIRIGIDO/i);if(m)info.proyecto=m[1].trim();
+  m=txt.match(/(?:CONSTRUCTORA|CLIENTE):\s*(.+?)\s+-\s+(?:NIT|\d)/i);if(m)info.constructora=m[1].trim();
+  info.equipos=[];
+  for(const seg of txt.split(/---/)){const cal=seg.match(/Fecha calibraci[oó]n:\s*(\d{4})\/(\d{1,2})\/(\d{1,2})/i);if(!cal)continue;
+    const prox=seg.match(/pr[oó]xima calibraci[oó]n:\s*(\d{4})\/(\d{1,2})\/(\d{1,2})/i);const name=seg.replace(/^.*?\d\.\s*/,"").split(",")[0].trim();
+    const serie=(seg.match(/serie:\s*([^,]+)/i)||[])[1];
+    info.equipos.push({nombre:name,serie:serie?serie.trim():"",calibracion:`${cal[1]}-${pad2(cal[2])}-${pad2(cal[3])}`,proxima:prox?`${prox[1]}-${pad2(prox[2])}-${pad2(prox[3])}`:null});}
+  return info;
+}
+/* --- cilindros y cubos (concreto TC 01, mortero/grout TC 79 y similares) --- */
+function parseCil(toks,pageText){
+  const lines=clusterLines(toks,2.5);const cyls=[];
+  const up=normU(pageText||"");
+  // 1) por encabezados: columna MPa y % de "Resistencia elemento"
+  const hdrY=(toks.find(o=>/^Localizaci/i.test(o.s))||{y:0}).y;
+  const heads=s=>toks.filter(o=>o.s===s&&o.y>hdrY-5&&o.y<hdrY+40).sort((a,b)=>a.x-b.x);
+  const hM=heads("MPa")[0],hP=hM&&heads("%").find(o=>o.x>hM.x);
+  const hC=toks.find(o=>/^Carga$/i.test(o.s)&&Math.abs(o.y-hdrY)<25);const hF=toks.find(o=>/^falla$/i.test(o.s)&&Math.abs(o.y-hdrY)<25);
+  if(hM&&hP){
+    for(const l of lines){if(l.y<=hM.y+3)continue;
+      const mT=l.toks.find(o=>Math.abs(o.x-hM.x)<14&&/^\d+,\d+$/.test(o.s));const pT=l.toks.find(o=>Math.abs(o.x-hP.x)<16&&/^\d+,\d+$/.test(o.s));
+      if(!mT||!pT)continue;
+      const cT=hC?l.toks.find(o=>Math.abs(o.x-hC.x)<18&&/^\d+,\d+$/.test(o.s)):null;
+      const fT=hF?l.toks.find(o=>Math.abs(o.x-hF.x)<14&&/^[1-6]$/.test(o.s)):null;
+      cyls.push({y:l.y,cargaX:cT?cT.x:(hC?hC.x-4:mT.x-150),falla:fT?+fT.s:null,mpa:numCO(mT.s)});}}
+  // 2) respaldo: ancla en factor de corrección (formato TC 01)
+  if(!cyls.length)for(const l of lines){const t=l.toks.map(o=>o.s);
+    for(let k=6;k+4<t.length;k++){
+      if(/^\d,\d{3}$/.test(t[k])&&/^\d,\d{2}$/.test(t[k-1])&&/^[1-6]$/.test(t[k-2])&&/^\d+,\d$/.test(t[k+3])){
+        cyls.push({y:l.y,cargaX:l.toks[k-6].x,falla:parseInt(t[k-2],10),mpa:numCO(t[k+3])});break;}}}
+  if(!cyls.length)return[];
+  const minX=Math.min(...cyls.map(c=>c.cargaX));
+  const dates=toks.filter(o=>/^\d{4}-\d{2}-\d{2}$/.test(o.s)&&o.x<minX&&cyls.some(c=>Math.abs(c.y-o.y)<14));
+  const S=dates.map(D=>{const line=toks.filter(o=>Math.abs(o.y-D.y)<3).sort((a,b)=>a.x-b.x);
+    const noTok=line.find(o=>o.x<D.x&&/^[A-Za-z]{0,4}-?\d+[A-Za-z]{0,4}$/.test(o.s));
+    const after=line.filter(o=>o.x>D.x&&/^\d+([.,]\d+)?$/.test(o.s)&&o.x<minX-2);
+    return{D,noTok,codigo:noTok?noTok.s:"",fcNom:after[0]?numCO(after[0].s):null,edad:after[1]?+after[1].s:null,cil:[]};});
+  if(!S.length)return[];
+  for(const c of cyls){let b=null,bd=1e9;for(const s of S){const d=Math.abs(s.D.y-c.y);if(d<bd){bd=d;b=s;}}b.cil.push(c);}
+  const hMix=toks.find(o=>/^mezcla$/i.test(o.s));
+  for(const s of S){const ys=s.cil.map(c=>c.y);const y0=Math.min(...ys,s.D.y)-7,y1=Math.max(...ys,s.D.y)+7;
+    const band=toks.filter(o=>o.y>=y0&&o.y<=y1);const xL=s.noTok?s.noTok.x+(s.noTok.w||8)+1:0;
+    const mix=band.filter(o=>/^(Concreto|Mortero|Grout)/i.test(o.s)&&o.x<s.D.x&&(!hMix||o.x>hMix.x-20));
+    const xR=mix.length?Math.min(...mix.map(o=>o.x))-1:(hMix?hMix.x-8:s.D.x-30);
+    s.localizacion=joinToks(band.filter(o=>o.x>xL&&o.x<xR&&o!==s.noTok));
+    s.mezcla=joinToks(band.filter(o=>o.x>=xR&&o.x<s.D.x-2));
+    s.fechaMuestreo=s.D.s;s.cil.sort((a,b)=>a.y-b.y);s.mpa=s.cil.map(c=>c.mpa);s.falla=s.cil.map(c=>c.falla);
+    const txt=normU(s.mezcla+" "+s.localizacion);
+    if(/GROUT|RELLENO|INYECCI/.test(txt))s.tipo="grout";
+    else if(/MORTERO/.test(txt))s.tipo="mortero";
+    else if(/CONCRETO/.test(normU(s.mezcla)))s.tipo="concreto";
+    else if(/MORTERO DE MAMPOSTER|MORTERO DE RELLENO/.test(up))s.tipo=/^G\d/i.test(s.codigo)||/RELLENO/.test(up)&&!/PEGA/.test(txt)?"grout":"mortero";
+    else if(/^G\d/i.test(s.codigo))s.tipo="grout";
+    else if(/^M\d/i.test(s.codigo))s.tipo="mortero";
+    else s.tipo="concreto";
+    delete s.D;delete s.noTok;delete s.cil;}
+  return S;
+}
+/* --- unidades: compresión (kind uni) y absorción (kind abs) --- */
+function parseUni(toks,kind){
+  const lines=clusterLines(toks,2.5);
+  const hLoc=toks.find(o=>/^Localizaci/i.test(o.s)),hProc=toks.find(o=>/^Procedencia/i.test(o.s));
+  const rows=[];
+  for(const l of lines){const t=l.toks;if(t.length<6)continue;
+    if(!(t[0].x<110&&/^[A-Za-z0-9-]+$/.test(t[0].s)&&/^[A-Ea-e]$/.test(t[1].s)))continue;
+    const nums=t.slice(2).filter(o=>isNum(o.s)).map(o=>o.s);
+    if(kind==="uni"&&nums.length>=10)rows.push({y:l.y,codigo:t[0].s,tok:t[0],letra:t[1].s.toUpperCase(),mpa:numCO(nums[nums.length-2]),areaNeta:numCO(nums[nums.length-5])});
+    else if(kind==="abs"&&nums.length>=6)rows.push({y:l.y,codigo:t[0].s,tok:t[0],letra:t[1].s.toUpperCase(),abs:numCO(nums[nums.length-1])});}
+  const by=new Map();for(const r of rows){if(!by.has(r.codigo))by.set(r.codigo,[]);by.get(r.codigo).push(r);}
+  return[...by.entries()].map(([codigo,rs])=>{
+    const y0=Math.min(...rs.map(r=>r.y))-8,y1=Math.max(...rs.map(r=>r.y))+8;const band=toks.filter(o=>o.y>=y0&&o.y<=y1);
+    const dates=band.filter(o=>isDate(o.s)).sort((a,b)=>a.x-b.x).map(o=>normDate(o.s));
+    let loc="",proc="";
+    if(hLoc&&hProc){const a=hLoc.x-14,b=hProc.x-8;loc=joinToks(band.filter(o=>o.x>=a&&o.x<b&&!isDate(o.s)));
+      proc=joinToks(band.filter(o=>o.x>=b&&o.x<b+70&&!isDate(o.s)));}
+    const desc=joinToks(band.filter(o=>o.x>85&&o.x<(hLoc?hLoc.x-40:150)&&!/^[A-E]$/.test(o.s)&&!rs.some(r=>r.tok===o)));
+    return{codigo,letras:rs.map(r=>r.letra),mpa:kind==="uni"?rs.map(r=>r.mpa):undefined,abs:kind==="abs"?rs.map(r=>r.abs):undefined,
+      fechaIngreso:dates[0]||"",fechaFin:dates[1]||dates[0]||"",localizacion:loc,procedencia:proc,descripcion:desc};});
+}
+/* --- prismas / muretes --- */
+function parseMur(toks,allText){
+  const lines=clusterLines(toks,2.5);const prisms=[];
+  for(const l of lines){const t=l.toks.map(o=>o.s);
+    for(let k=2;k+5<t.length;k++){
+      if(/^\d,\d{3}$/.test(t[k])&&/^\d+$/.test(t[k-1])&&/^\d,\d{2}$/.test(t[k-2])&&/^\d+,\d$/.test(t[k+2])&&/^\d+,\d$/.test(t[k+5])){
+        prisms.push({y:l.y,x0:l.toks[Math.max(0,k-5)].x,factor:numCO(t[k]),hte:numCO(t[k-2]),area:+t[k-1],carga:numCO(t[k+1]),mpa:numCO(t[k+2]),mpaC:numCO(t[k+5]),line:l});break;}}}
+  if(!prisms.length)return[];
+  const minX=Math.min(...prisms.map(p=>p.x0));
+  const heads=prisms.filter(p=>p.line.toks.some(o=>isDate(o.s)&&o.x<minX));
+  const S=heads.map(h=>{const t=h.line.toks;const ds=t.filter(o=>isDate(o.s));const codeTok=t[0];
+    const after=t.filter(o=>o.x>ds[0].x&&o.x<(ds[1]?ds[1].x:minX)&&/^\d+([.,]\d+)?$/.test(o.s));
+    return{y:h.y,codeTok,codigo:codeTok.s,fechaMuestreo:normDate(ds[0].s),fechaRotura:ds[1]?normDate(ds[1].s):"",fmKg:after[0]?numCO(after[0].s):null,edad:after[1]?+after[1].s:null,dElab:ds[0],pr:[]};});
+  for(const p of prisms){let b=null;for(const s of S)if(p.y>=s.y-3&&(!b||s.y>b.y))b=s;if(b)b.pr.push(p);}
+  const fallas=[...allText.matchAll(/Tipo de fallo:\s*(\d)/gi)].map(m=>+m[1]);let fi=0;
+  S.sort((a,b)=>a.y-b.y);
+  for(const s of S){const y1=Math.max(...s.pr.map(p=>p.y))+10;
+    s.localizacion=joinToks(toks.filter(o=>o.y>=s.y-4&&o.y<=y1&&o.x>s.codeTok.x+(s.codeTok.w||8)&&o.x<s.dElab.x-2));
+    s.mpa=s.pr.map(p=>p.mpaC);s.mpaSin=s.pr.map(p=>p.mpa);s.factor=s.pr.map(p=>p.factor);s.hte=s.pr.map(p=>p.hte);
+    s.falla=s.pr.map(()=>fallas[fi++]??null);
+    delete s.codeTok;delete s.dElab;delete s.pr;}
+  return S;
+}
+function parsePages(pages){
+  /* pages: [{toks,text}] → reports [{kind,info,samples}] */
+  const reps=[];
+  for(const pg of pages){const kind=pageKind(pg.text);if(!kind)continue;const info=parseHeader(pg.text);
+    let samples=kind==="cil"?parseCil(pg.toks,pg.text):kind==="mur"?parseMur(pg.toks,pg.text):parseUni(pg.toks,kind);
+    const prev=reps[reps.length-1];
+    if(prev&&prev.kind===kind&&(info.numero==null||info.numero===prev.info.numero)){prev.samples.push(...samples);continue;}
+    reps.push({kind,info,samples});}
+  return reps;
+}
+
+
+/* ================= Utilidades ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=(n,d=1)=>n==null||isNaN(n)?"—":(+n).toLocaleString("es-CO",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=n=>n==null||isNaN(n)?"—":Math.round(n*100)+" %";
+const MESC=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const fdate=s=>{if(!s)return"—";const[y,m,d]=s.split("-");return`${d} ${MESC[+m-1]} ${y.slice(2)}`;};
+const dnum=s=>{const[y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)/864e5;};
+const addDays=(s,n)=>new Date((dnum(s)+n)*864e5).toISOString().slice(0,10);
+const TODAY=(()=>{const d=new Date();return`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;})();
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const clean=o=>JSON.parse(JSON.stringify(o));
+const normTxt=t=>String(t||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const codeKey=c=>normTxt(c).replace(/[^A-Z0-9]/g,"");
+const KG2MPA=0.0980665;
+const PSI2MPA={2100:14.5,2500:17.5,3000:21,3500:24.5,4000:28,4500:31.5,5000:34.5,6000:42};
+const nomToMpa=v=>v==null?null:v>=1000?(PSI2MPA[v]??Math.round(v*0.006895*10)/10):v;
+const limitB=fc=>fc<=35?fc-3.5:0.9*fc;
+const critD=t=>S.cfg.critMam==="D"&&(t==="mortero"||t==="grout"||t==="murete");
+const limFor=(t,fc)=>critD(t)?0.8*fc:t==="murete"?fc:limitB(fc);
+const avgLbl=t=>critD(t)?"Prom. acumulado":"Prom. 3 consec.";
+function rangeFlag(v){if(!v||v.length<2)return null;const a=mean(v);const r=(Math.max(...v)-Math.min(...v))/a*100;const lim=v.length>=3?10.6:9.0;return r>lim?{r,lim}:null;}
+const parseList=s=>String(s||"").replace(/;/g," ").split(/[\s]+/).map(x=>parseFloat(x.replace(",","."))).filter(x=>!isNaN(x));
+
+const TIPOS={
+  concreto:{label:"Concreto",kind:"cil",fcL:"f'c",defFc:21,unidad:"cilindros"},
+  mortero:{label:"Mortero de pega",kind:"cil",fcL:"f'cp",defFc:17.5,unidad:"cubos/cilindros"},
+  grout:{label:"Grouting",kind:"cil",fcL:"f'cr",defFc:14.5,unidad:"cilindros"},
+  unidad:{label:"Unidades de mampostería",kind:"uni",fcL:"Clase"},
+  murete:{label:"Muretes",kind:"mur",fcL:"f'm",defFc:117*KG2MPA,unidad:"prismas"}
+};
+const TORDER=["concreto","mortero","grout","unidad","murete"];
+const CLASES={PVI:{n:"PV Clase I",prom:24,ind:20,area:"neta"},PVII:{n:"PV Clase II",prom:18,ind:15,area:"neta"},PH:{n:"PH",prom:5,ind:3.5,area:"bruta"},M:{n:"Maciza (M)",prom:20,ind:15,area:"bruta"}};
+const CFG0={proyecto:STI.proyecto,obra:STI.obra,constructora:STI.constructora,laboratorio:STI.laboratorio,
+  zonas:STI.zonas.length?STI.zonas:[{cod:"T1",nombre:"Torre 1"}],
+  claseUni:"PVI",absProm:13,absInd:16,critMam:"C"};
+const EST={
+  cumple:{label:"Cumple",cls:"good",ic:"✓",color:"var(--good)"},
+  aceptable:{label:"Aceptable NSR",cls:"warn",ic:"!",color:"var(--warn)"},
+  prombajo:{label:"Promedio bajo",cls:"serious",ic:"▲",color:"var(--serious)"},
+  nocumple:{label:"No cumple",cls:"crit",ic:"✕",color:"var(--crit)"},
+  pendiente:{label:"En espera",cls:"muted",ic:"…",color:"var(--ink-3)"},
+  vencido:{label:"Rotura atrasada",cls:"late",ic:"⌛",color:"var(--late)"},
+  aprobada:{label:"Aprobada por concepto",cls:"apr",ic:"✓",color:"var(--accent)"}
+};
+const SOPORTES=["Concepto del diseñador estructural","Ensayos destructivos (núcleos / extracción de muretes)","Ensayos no destructivos (esclerómetro, ultrasonido)","Resultados del proveedor","Otro"];
+const APROBABLE=["nocumple","prombajo","vencido"];
+const RECLASIFICABLE=["prombajo"];
+const chip=k=>`<span class="chip c-${EST[k].cls}"><span class="ic" aria-hidden="true">${EST[k].ic}</span>${EST[k].label}</span>`;
+const ELEMENTOS={concreto:["CIMENTACION","LOSA","PLACA ENTREPISO","MURO","VIGA DE AMARRE","COLUMNA","ESCALERA"],mortero:["MORTERO DE PEGA"],grout:["GROUTING"],unidad:["BLOQUE"],murete:["MURETE NO INYECTADO","MURETE INYECTADO"]};
+
+const S={cfg:clean(CFG0),muestras:new Map(),informes:new Map(),db:null,downloads:null,tab:"concreto",review:[],
+  f:{edif:"",fc:"",est:"",q:"",sort:"asc"},cFc:"",cLbl:true,sheet:null};
+const sid=(tipo,codigo)=>`${tipo}-${codeKey(codigo)}`;
+const zonaNombre=c=>((S.cfg.zonas||[]).find(z=>z.cod===c)||{}).nombre||c||"";
+const zonaOpts=sel=>`<option value="">—</option>`+(S.cfg.zonas||[]).map(z=>`<option value="${esc(z.cod)}" ${z.cod===sel?"selected":""}>${esc(z.cod)} · ${esc(z.nombre)}</option>`).join("")+(sel&&!(S.cfg.zonas||[]).some(z=>z.cod===sel)?`<option value="${esc(sel)}" selected>${esc(sel)}</option>`:"");
+function guessZona(loc){const L=normTxt(loc);const m=L.match(/MZ\s*(\d+)|MANZANA\s*(\d+)/);if(m){const c="MZ"+(m[1]||m[2]);if((S.cfg.zonas||[]).some(z=>z.cod===c))return c;}const z=S.cfg.zonas||[];return z.length===1?z[0].cod:"";}
+function guessElemento(tipo,loc){const L=normTxt(loc);
+  if(tipo==="mortero")return"MORTERO DE PEGA";if(tipo==="grout")return"GROUTING";if(tipo==="unidad")return"BLOQUE";
+  if(tipo==="murete")return/NO INYECT/.test(L)?"MURETE NO INYECTADO":/INYECT/.test(L)?"MURETE INYECTADO":"MURETE";
+  for(const[k,v]of[["CIMENTA","CIMENTACION"],["PLACA","PLACA ENTREPISO"],["ENTREPISO","PLACA ENTREPISO"],["LOSA","LOSA"],["MURO","MURO"],["VIGA","VIGA DE AMARRE"],["COLUMNA","COLUMNA"],["ESCALERA","ESCALERA"]])if(L.includes(k))return v;return"";}
+const claseDe=m=>CLASES[m.clase||S.cfg.claseUni]||CLASES.PVI;
+
+/* ================= Cálculo ================= */
+const stage=e=>e.edad<28?"temp":e.edad<=31?"d28":"post";
+function deriveOne(m){
+  const T=TIPOS[m.tipo]||TIPOS.concreto;const r={m,tipo:m.tipo,kind:T.kind,fc:+m.fc,flags:[]};
+  if(T.kind==="cil"||T.kind==="mur"){
+    const ens=[...(m.ensayos||[])].filter(e=>e.mpa&&e.mpa.length).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||"")||a.edad-b.edad);
+    const last=st=>{const l=ens.filter(e=>stage(e)===st);return l.length?l[l.length-1]:null;};
+    for(const k of["temp","d28","post"]){r[k]=last(k);if(r[k]){r[k].avg=mean(r[k].mpa);r[k].ratio=r[k].avg/r.fc;r[k].flag=T.kind==="cil"?rangeFlag(r[k].mpa):null;}}
+    r.base=null;
+    if(r.d28)r.base=r.d28.avg;
+    r.base28=r.base;r.porPost=false;
+    if(r.base!=null&&r.post&&r.post.avg>r.base){r.base=r.post.avg;r.porPost=true;}
+    if(r.base==null&&r.post){r.base=r.post.avg;r.porPost=true;}
+    r.ratio=r.base!=null?r.base/r.fc:null;
+    r.flags=["temp","d28","post"].filter(k=>r[k]&&r[k].flag);
+  }else{
+    const c=claseDe(m);r.clase=c;const co=m.compresion,ab=m.absorcion;
+    if(co&&co.mpa&&co.mpa.length){r.cAvg=mean(co.mpa);r.cMin=Math.min(...co.mpa);r.ratio=r.cAvg/c.prom;r.base=r.cAvg;
+      r.cOk=r.cAvg>=c.prom-1e-9&&r.cMin>=c.ind-1e-9;}
+    if(ab&&ab.pct&&ab.pct.length){r.aAvg=mean(ab.pct);r.aMax=Math.max(...ab.pct);const lp=+S.cfg.absProm,li=+S.cfg.absInd;
+      const over=ab.pct.filter(v=>v>li+1e-9);r.aOk=r.aAvg<=lp+1e-9&&(over.length===0||(over.length===1&&over[0]<=li*1.1+1e-9));}
+  }
+  return r;
+}
+const natCmp=(a,b)=>String(a||"").localeCompare(String(b||""),"es",{numeric:true,sensitivity:"base"});
+const byF=(a,b)=>(a.m.fechaMuestreo||"9999").localeCompare(b.m.fechaMuestreo||"9999")||natCmp(a.m.codigo,b.m.codigo);
+function derive(){
+  const rows=[...S.muestras.values()].map(deriveOne);
+  const groups=new Map();
+  for(const r of rows){if(!(r.kind==="cil"||(r.kind==="mur"&&critD("murete")))||r.base==null)continue;const k=r.tipo+"|"+r.fc;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r);}
+  for(const t of TORDER)rows.filter(r=>r.tipo===t).sort(byF).forEach((r,i)=>r.pos=i+1);
+  for(const list of groups.values()){list.sort(byF);
+    if(critD(list[0].tipo))list.forEach((r,i)=>{r.avg3=mean(list.slice(0,i+1).map(x=>x.base));r.avg3Nos=[`${i+1} resultado(s)`];});
+    else list.forEach((r,i)=>{if(i>=2){r.avg3=mean([list[i-2].base,list[i-1].base,r.base]);r.avg3Nos=[list[i-2].m.codigo,list[i-1].m.codigo,r.m.codigo];}});}
+  for(const r of rows){
+    const late=r.m.fechaMuestreo&&dnum(TODAY)>dnum(r.m.fechaMuestreo)+31;
+    if(r.kind==="cil"||(r.kind==="mur"&&critD("murete"))){
+      if(r.base==null)r.est=late?"vencido":"pendiente";
+      else if(r.base<limFor(r.tipo,r.fc)-1e-9)r.est="nocumple";
+      else if(Math.round(r.base/r.fc*100)>=100)r.est="cumple";
+      else if(r.avg3!=null&&r.avg3<r.fc-1e-9)r.est="prombajo";
+      else r.est="aceptable";
+    }else if(r.kind==="mur"){
+      if(r.base==null)r.est=late?"vencido":"pendiente";else r.est=r.base>=r.fc-1e-9?"cumple":"nocumple";
+    }else{
+      if(r.cAvg==null)r.est="pendiente";
+      else if(!r.cOk||r.aOk===false)r.est="nocumple";
+      else r.est="cumple";
+    }
+    r.estOrig=r.est;r.reclasif=false;
+    if(r.m.reclasif&&r.est==="prombajo"){r.est="aceptable";r.reclasif=true;}
+    else if(r.m.aprobacion&&APROBABLE.includes(r.est))r.est="aprobada";
+  }
+  return rows;
+}
+
+/* ================= Render ================= */
+let ROWS=[];
+const tabRows=()=>ROWS.filter(r=>r.tipo===S.tab);
+function render(){ROWS=derive();renderHeader();renderTabs();renderStatus();renderClasses();renderAlerts();renderChart();renderTable();renderReps();renderClaseTbl();}
+function renderHeader(){const c=S.cfg;
+  $("hProy").textContent=c.proyecto||"";$("hObra").textContent=c.obra||"—";$("hLab").textContent=c.laboratorio||"—";$("hCons").textContent=c.constructora||"—";
+  const z=c.zonas||[];$("hZonas").innerHTML=z.length?`Zonas <b>${z.map(x=>esc(x.cod)).join(" · ")}</b>`:"";
+  const sel=$("fEdif");const cur=S.f.edif;sel.innerHTML=`<option value="">Todas las zonas</option>`+z.map(x=>`<option value="${esc(x.cod)}">${esc(x.cod)} · ${esc(x.nombre)}</option>`).join("");sel.value=cur;if(sel.value!==cur)S.f.edif="";}
+const ALERT_EST=["nocumple","prombajo","vencido"];
+const isRev=r=>!!(r.m.revisada&&r.m.revisada.est===r.est);
+const needsAtt=r=>ALERT_EST.includes(r.est)&&!isRev(r);
+function renderTabs(){
+  $("tabs").innerHTML=TORDER.map(t=>{const rs=ROWS.filter(r=>r.tipo===t);
+    const bad=rs.filter(r=>needsAtt(r)&&r.est!=="vencido").length,late=rs.filter(r=>needsAtt(r)&&r.est==="vencido").length;
+    return`<button class="tab" type="button" role="tab" data-tab="${t}" aria-selected="${S.tab===t}">${TIPOS[t].label}<span class="cnt" title="Muestras">${rs.length}</span>${bad?`<span class="al" data-badge="bad" title="${bad} muestra(s) que no cumplen o con promedio bajo. Clic para verlas.">✕ ${bad}</span>`:""}${late?`<span class="al late" data-badge="vencido" title="${late} muestra(s) con la rotura de 28 días atrasada. Clic para verlas.">⌛ ${late}</span>`:""}</button>`;}).join("");
+  $("tableTitle").textContent=`Tabla de control · ${TIPOS[S.tab].label}`;
+}
+function renderStatus(){
+  const rs=tabRows();const keys=TIPOS[S.tab].kind==="uni"?["cumple","nocumple","aprobada","pendiente"]:TIPOS[S.tab].kind==="mur"&&!critD("murete")?["cumple","nocumple","aprobada","pendiente","vencido"]:Object.keys(EST);
+  const c={};keys.forEach(k=>c[k]=0);rs.forEach(r=>c[r.est]=(c[r.est]||0)+1);
+  $("statusbar").innerHTML=keys.map(k=>`<button type="button" class="schip" data-est="${k}" aria-pressed="${S.f.est===k}"><span class="dot" style="background:${EST[k].color}"></span><span><span class="n">${c[k]||0}</span><br><span class="l">${EST[k].label}</span></span></button>`).join("");
+  const sel=$("fEst");const cur=S.f.est;sel.innerHTML=`<option value="">Todos los estados</option>`+keys.map(k=>`<option value="${k}">${EST[k].label}</option>`).join("");sel.value=cur;
+}
+const groupKey=r=>r.kind==="uni"?(r.m.clase||S.cfg.claseUni):String(r.fc);
+const groupName=(k,kind)=>kind==="uni"?(CLASES[k]||{n:k}).n:kind==="mur"?`f'm ${fmt(+k/KG2MPA,0)} kg/cm²`:`${TIPOS[S.tab].fcL} ${fmt(+k)} MPa`;
+function renderClasses(){
+  const rs=tabRows();const kind=TIPOS[S.tab].kind;const groups=new Map();rs.forEach(r=>{const k=groupKey(r);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r);});
+  const keys=[...groups.keys()].sort((a,b)=>parseFloat(a)-parseFloat(b)||a.localeCompare(b));
+  const sel=$("fFc");const cur=S.f.fc;sel.innerHTML=`<option value="">${kind==="uni"?"Todas las clases":"Todas las resistencias"}</option>`+keys.map(k=>`<option value="${esc(k)}">${esc(groupName(k,kind))}</option>`).join("");sel.value=cur;if(sel.value!==cur)S.f.fc="";
+  $("classes").innerHTML=keys.map(k=>{const list=groups.get(k);const cnt={};list.forEach(r=>cnt[r.est]=(cnt[r.est]||0)+1);
+    const bar=Object.keys(EST).filter(e=>cnt[e]).map(e=>`<i style="flex:${cnt[e]};background:${EST[e].color}" title="${EST[e].label}: ${cnt[e]}"></i>`).join("");
+    let stats="";
+    if(kind==="uni"){const v=list.filter(r=>r.cAvg!=null).map(r=>r.cAvg);const a=list.filter(r=>r.aAvg!=null).map(r=>r.aAvg);const c=CLASES[k]||CLASES.PVI;
+      stats=`<div><span class="k">Muestras ensayadas</span><span class="v">${v.length}</span></div><div><span class="k">Compresión prom.</span><span class="v">${fmt(v.length?mean(v):null)}</span></div><div><span class="k">Mínimo promedio</span><span class="v">${fmt(v.length?Math.min(...v):null)}</span></div>
+        <div><span class="k">Requisito prom. / ind.</span><span class="v">${fmt(c.prom)} / ${fmt(c.ind)}</span></div><div><span class="k">Absorción prom.</span><span class="v">${a.length?fmt(mean(a))+" %":"—"}</span></div><div><span class="k">Absorción máx. prom.</span><span class="v">${a.length?fmt(Math.max(...a))+" %":"—"}</span></div>`;}
+    else{const res=list.filter(r=>r.base!=null).map(r=>r.base);const n=res.length;const avg=n?mean(res):null;const sd=n>1?Math.sqrt(res.reduce((s,x)=>s+(x-avg)**2,0)/(n-1)):null;const fc=+k;
+      const last=list.filter(r=>r.avg3!=null).sort((a,b)=>(a.m.fechaMuestreo||"").localeCompare(b.m.fechaMuestreo||"")).pop();
+      stats=`<div><span class="k">Ensayos</span><span class="v">${n}</span></div><div><span class="k">Promedio MPa</span><span class="v">${fmt(avg)}</span></div><div><span class="k">Desv. est. s</span><span class="v">${fmt(sd,2)}</span></div>
+        <div><span class="k">Mínimo</span><span class="v ${n&&Math.min(...res)<limFor(S.tab,fc)?"below":""}">${fmt(n?Math.min(...res):null)}</span></div><div title="Muestras con resultado final en «Cumple» o «Aceptable NSR» (incluye las aceptadas a criterio)"><span class="k">Cumple + aceptable</span><span class="v">${n?(k=>`${k}/${n} <small style="font-size:12px;color:var(--ink-3)">${Math.round(k/n*100)} %</small>`)(list.filter(r=>r.base!=null&&(r.est==="cumple"||r.est==="aceptable")).length):"—"}</span></div>
+        <div><span class="k">${kind==="mur"&&!critD("murete")?"f'm MPa":critD(S.tab)?"Prom. acumulado":"Último prom. 3"}</span><span class="v">${kind==="mur"&&!critD("murete")?fmt(fc,2):fmt(last?last.avg3:null)}</span></div>`;}
+    return`<article class="ccard"><header><span class="fc">${esc(groupName(k,kind))}</span><span class="muted" style="font-size:12px">${list.length} muestras</span></header><div class="stats">${stats}</div><div class="bar">${bar}</div></article>`;}).join("")||`<div class="empty" style="grid-column:1/-1">Aún no hay muestras de ${TIPOS[S.tab].label.toLowerCase()}. Carga un informe o agrega una muestra manual.</div>`;
+}
+/* --- avisos compactos con marca de revisado --- */
+const dispKey=e=>`${e.fecha||""}|${e.edad}|${e.mpa.join(",")}`;
+const dispFlags=r=>["temp","d28","post"].filter(k=>r[k]&&r[k].flag).map(k=>r[k]);
+const dispRev=r=>{const ks=r.m.dispRev||[];return dispFlags(r).every(e=>ks.includes(dispKey(e)));};
+const dispRows=()=>ROWS.filter(r=>r.tipo===S.tab&&dispFlags(r).length);
+function avSummary(label,chipHtml,pend,revs){
+  return`<summary>${chipHtml} ${pend?`<b>${pend}</b> pendiente(s)`:`sin pendientes`} <span class="muted">· ${label}${revs?` · ${revs} revisado(s)`:""}</span></summary>`;}
+function avisoLab(){const L=[...S.informes.values()].filter(i=>(i.alertas||[]).length);
+  if(!L.length)return"";L.sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")||String(b.numero).localeCompare(String(a.numero),undefined,{numeric:true}));
+  const pend=L.filter(i=>!i.avisoRev),revs=L.filter(i=>i.avisoRev);const show=S.avShow&&S.avShow.lab;
+  const line=(inf,rev)=>`<div class="avline${rev?" done":""}"><span><b class="mono">Inf. ${esc(inf.obra||"")}-${esc(inf.numero)}</b> · ${(inf.alertas||[]).map(esc).join(" · ")}${rev?` <span class="muted">· revisado ${fdate(inf.avisoRev.fecha)}</span>`:""}</span><button class="avx" type="button" data-avlab="${esc(inf.id)}" title="${rev?"Volver a pendiente":"Marcar como revisado"}">${rev?"Reabrir":"✓ Revisado"}</button></div>`;
+  return`<details class="aviso" data-cat="lab" ${S.avOpen&&S.avOpen.lab?"open":""}>${avSummary("avisos del laboratorio (calibración, equipos)",`<span class="chip c-crit"><span class="ic">!</span>Laboratorio</span>`,pend.length,revs.length)}
+    <div class="avl">${pend.map(i=>line(i,false)).join("")}${pend.length>1?`<div><button class="avx" type="button" data-avall="lab">✓ Marcar todos revisados</button></div>`:""}
+    ${revs.length?`<div><button class="avlink" type="button" data-avshow="lab">${show?"Ocultar":"Ver"} revisados</button></div>${show?revs.map(i=>line(i,true)).join(""):""}`:""}</div></details>`;}
+function avisoDisp(){const D=dispRows().sort((a,b)=>a.pos-b.pos);if(!D.length)return"";
+  const pend=D.filter(r=>!dispRev(r)),revs=D.filter(r=>dispRev(r));const show=S.avShow&&S.avShow.disp;
+  const item=(r,rev)=>{const e=dispFlags(r).slice(-1)[0];return`<span class="avi${rev?" done":""}"><button type="button" class="avb" data-open="${esc(r.m.id)}" title="${e.edad} d · ${e.mpa.map(v=>fmt(v)).join(" · ")} MPa · rango ${fmt(e.flag.r)} % > ${fmt(e.flag.lim)} %">${esc(r.m.codigo)} <span class="muted">${e.edad} d · ${fmt(e.flag.r,0)} %</span></button><button class="avx sm" type="button" data-avdisp="${esc(r.m.id)}" title="${rev?"Volver a pendiente":"Marcar como revisada"}">${rev?"↺":"✓"}</button></span>`;};
+  return`<details class="aviso" data-cat="disp" ${S.avOpen&&S.avOpen.disp?"open":""}>${avSummary(`dispersión alta en ${TIPOS[S.tab].label.toLowerCase()}`,`<span class="chip c-serious"><span class="ic">⚑</span>Dispersión</span>`,pend.length,revs.length)}
+    <div class="avl"><div class="avn">${pend.map(r=>item(r,false)).join("")}</div>${pend.length>1?`<div><button class="avx" type="button" data-avall="disp">✓ Marcar todas revisadas</button></div>`:""}
+    ${revs.length?`<div><button class="avlink" type="button" data-avshow="disp">${show?"Ocultar":"Ver"} revisadas</button></div>${show?`<div class="avn">${revs.map(r=>item(r,true)).join("")}</div>`:""}`:""}</div></details>`;}
+async function avSetLab(ids,rev){try{for(const id of ids){const inf=S.informes.get(id);if(!inf)continue;const d=clean(inf);if(rev)d.avisoRev={fecha:TODAY};else delete d.avisoRev;await writeInforme(d);}renderAlerts();renderReps();
+  toast(rev?`${ids.length} aviso(s) del laboratorio marcados como revisados.`:"Aviso del laboratorio reabierto.");}catch(e){toast("No se pudo guardar: "+(e.message||e.code));}}
+async function avSetDisp(ids,rev){try{for(const id of ids){const m=S.muestras.get(id);const r=ROWS.find(x=>x.m.id===id);if(!m||!r)continue;const d=clean(m);
+    if(rev)d.dispRev=[...new Set([...(d.dispRev||[]),...dispFlags(r).map(dispKey)])];else delete d.dispRev;await writeMuestra(d);}render();
+  toast(rev?`${ids.length} muestra(s) con dispersión marcadas como revisadas.`:"Dispersión reabierta.");}catch(e){toast("No se pudo guardar: "+(e.message||e.code));}}
+function renderAlerts(){
+  const items=[];const pri={nocumple:0,prombajo:1,vencido:2};
+  const revs=ROWS.filter(r=>pri[r.est]!=null&&isRev(r));
+  ROWS.filter(r=>pri[r.est]!=null&&(S.showRev||!isRev(r))).sort((a,b)=>(a.tipo===S.tab?0:1)-(b.tipo===S.tab?0:1)||pri[a.est]-pri[b.est]||a.pos-b.pos).forEach(r=>{
+    let t="";const T=TIPOS[r.tipo];
+    if(r.kind==="uni")t=!r.cOk?`Compresión: prom. ${fmt(r.cAvg)} MPa, mín. ${fmt(r.cMin)} MPa (requiere ${fmt(r.clase.prom)} / ${fmt(r.clase.ind)})`:`Absorción: prom. ${fmt(r.aAvg)} %, máx. ${fmt(r.aMax)} % (límite ${S.cfg.absProm} / ${S.cfg.absInd} %)`;
+    else if(r.kind==="mur"&&!critD("murete"))t=r.est==="vencido"?`Sin rotura a 28 d (elaborado ${fdate(r.m.fechaMuestreo)})`:`Prom. corregido ${fmt(r.base)} MPa < f'm ${fmt(r.fc,2)} MPa`;
+    else if(r.est==="nocumple")t=`${fmt(r.base)} MPa < límite ${fmt(limFor(r.tipo,r.fc))} MPa${r.porPost?` (aun con rotura a ${r.post.edad} d)`:""}`;
+    else if(r.est==="prombajo")t=`${critD(r.tipo)?"Prom. acumulado":"Prom. 3 consecutivos"} ${fmt(r.avg3)} MPa < ${T.fcL} ${fmt(r.fc)} (${r.avg3Nos.join(", ")})`;
+    else t=`Tocaba romper el ${fdate(addDays(r.m.fechaMuestreo,28))}; no hay resultado a 28 d`;
+    items.push({id:r.m.id,k:r.est,title:`${T.label} ${r.m.codigo} · ${r.m.elemento||""}`,t,rev:isRev(r),canRev:true});});
+  const av=[avisoLab(),avisoDisp()].filter(Boolean);
+  const avHtml=av.length?`<div class="avisos">${av.join("")}</div>`:"";
+  $("alertCount").innerHTML=`${items.length?`${items.length} puntos`:""}${revs.length?` · <button class="btn small" type="button" id="togRev">${S.showRev?"Ocultar":"Ver"} ${revs.length} revisada(s)</button>`:""}`;
+  $("alerts").innerHTML=avHtml+(items.length?items.map(i=>{const c=i.k==="flag"?`<span class="chip c-serious"><span class="ic">⚑</span>Dispersión</span>`:i.k==="lab"?`<span class="chip c-crit"><span class="ic">!</span>Laboratorio</span>`:chip(i.k);
+    return`<div class="alert${i.rev?" rev":""}" ${i.id?`data-open="${esc(i.id)}" role="button" tabindex="0"`:""}>${c}<span class="t">${esc(i.title)}<small>${esc(i.t)}${i.rev?" · revisada":""}</small></span><span class="no">${i.canRev?`<button class="btn small" type="button" data-rev="${esc(i.id)}" title="${i.rev?"Volver a mostrar esta alerta":"Quitar esta alerta de la lista y del contador de la pestaña"}">${i.rev?"Reabrir":"Marcar revisada"}</button>`:""}</span></div>`;}).join(""):`<div class="empty">Sin pendientes.</div>`);
+}
+function filtered(){
+  const q=normTxt(S.f.q.trim());
+  return tabRows().filter(r=>(!S.f.edif||r.m.edificio===S.f.edif)&&(!S.f.fc||groupKey(r)===S.f.fc)&&(!S.f.est||r.est===S.f.est)&&
+    (!q||normTxt(`${r.pos} ${r.m.codigo} ${r.m.elemento} ${r.m.localizacion} ${r.m.notas||""}`).includes(q)));
+}
+const vals=(arr,lo)=>arr.map(v=>`<span class="${lo&&lo(v)?"lo":""}">${fmt(v)}</span>`).join(" · ");
+function resCell(e){if(!e)return`<td class="res"><span class="muted">—</span></td>`;
+  return`<td class="res"><div class="v">${fmt(e.avg)}<span class="pct">${pct(e.ratio)}</span>${e.flag?`<span class="flag" title="Rango ${fmt(e.flag.r)} % > ${fmt(e.flag.lim)} %">⚑</span>`:""}</div><div class="cyl">${e.edad} d · ${e.mpa.map(v=>fmt(v)).join(" · ")}</div></td>`;}
+const aprNote=r=>r.est==="aprobada"?`<div class="muted" style="font-size:11px;margin-top:3px">${esc(r.m.aprobacion.soporte)}${r.m.aprobacion.ref?" · "+esc(r.m.aprobacion.ref):""} · era «${EST[r.estOrig].label}»</div>`:"";
+const noCell=r=>`<td class="no"><div class="nob" title="${EST[r.est].label}"><i style="background:${EST[r.est].color}"></i><span>${r.pos}</span></div></td><td><b class="mono" style="font-size:14px">${esc(r.m.codigo)}</b></td>`;
+const locCell=r=>`<td class="loc"><div class="e">${esc(r.m.elemento||"—")}${r.m.edificio?`<span class="ed" title="${esc(zonaNombre(r.m.edificio))}">${esc(r.m.edificio)}</span>`:""}</div><div class="l">${esc(r.m.localizacion)}</div></td>`;
+function renderTable(){
+  const kind=TIPOS[S.tab].kind,T=TIPOS[S.tab];
+  const list=filtered().sort((a,b)=>S.f.sort==="cod"?natCmp(a.m.codigo,b.m.codigo):S.f.sort==="desc"?b.pos-a.pos:a.pos-b.pos);
+  $("countLbl").textContent=`${list.length} de ${tabRows().length} muestras`;
+  let head,body,cols;
+  if(kind==="cil"){cols=10;
+    head=`<tr class="grp"><th colspan="5"></th><th>Edad temprana</th><th>28 días</th><th>Edad posterior / testigo</th><th colspan="2"></th></tr><tr><th>No.</th><th>Código</th><th>Muestreo</th><th>Elemento · localización</th><th>${T.fcL} MPa</th><th>MPa · %</th><th>MPa · %</th><th>MPa · %</th><th>${avgLbl(S.tab)}</th><th>Estado</th></tr>`;
+    body=list.map(r=>`<tr data-open="${esc(r.m.id)}">${noCell(r)}<td class="mono" style="white-space:nowrap;font-size:12.5px">${fdate(r.m.fechaMuestreo)}</td>${locCell(r)}<td class="num">${fmt(r.fc)}</td>${resCell(r.temp)}${resCell(r.d28)}${resCell(r.post)}
+      <td class="num ${r.avg3!=null&&r.avg3<r.fc?"below":""}">${r.avg3!=null?fmt(r.avg3)+`<div class="muted" style="font-size:11px">${pct(r.avg3/r.fc)}</div>`:`<span class="muted">—</span>`}</td>
+      <td>${chip(r.est)}${reclSel(r)}${r.reclasif?`<div class="muted" style="font-size:11px;margin-top:3px">manual · por cálculo: ${EST[r.estOrig].label}</div>`:""}${aprNote(r)}${isRev(r)?`<div class="muted" style="font-size:11px;margin-top:3px">alerta revisada ${fdate(r.m.revisada.fecha)}</div>`:""}${r.porPost?`<div style="font-size:11px;margin-top:3px;color:var(--ink-2)">según rotura a ${r.post.edad} d · a 28 d fue ${r.base28!=null?pct(r.base28/r.fc):"—"}</div>`:""}</td></tr>`).join("");}
+  else if(kind==="mur"){cols=9;
+    head=`<tr><th>No.</th><th>Código</th><th>Elaboración</th><th>Tipo · localización</th><th>f'm</th><th>Rotura</th><th>Prismas (corregidos h/t) MPa</th><th>Promedio · % f'm</th><th>Estado</th></tr>`;
+    body=list.map(r=>{const e=r.post||r.d28||r.temp;return`<tr data-open="${esc(r.m.id)}">${noCell(r)}<td class="mono" style="white-space:nowrap;font-size:12.5px">${fdate(r.m.fechaMuestreo)}</td>${locCell(r)}
+      <td class="num">${fmt(r.fc/KG2MPA,0)} kg/cm²<div class="muted" style="font-size:11px">${fmt(r.fc,2)} MPa</div></td>
+      <td class="mono" style="font-size:12.5px;white-space:nowrap">${e?`${fdate(e.fecha)}<div class="muted" style="font-size:11px">${e.edad} d</div>`:"—"}</td>
+      <td class="vals">${e?vals(e.mpa):"—"}${e&&e.falla?`<div class="muted" style="font-size:11px">falla ${e.falla.join(" / ")}</div>`:""}</td>
+      <td class="res">${r.base!=null?`<div class="v">${fmt(r.base)}<span class="pct">${pct(r.ratio)}</span></div>`:`<span class="muted">—</span>`}</td><td>${chip(r.est)}${reclSel(r)}${r.reclasif?`<div class="muted" style="font-size:11px;margin-top:3px">manual · por cálculo: ${EST[r.estOrig].label}</div>`:""}${aprNote(r)}</td></tr>`;}).join("");}
+  else{cols=10;
+    head=`<tr class="grp"><th colspan="5"></th><th colspan="2">Compresión MPa</th><th colspan="2">Absorción 24 h %</th><th></th></tr><tr><th>No.</th><th>Código</th><th>Ingreso lab.</th><th>Descripción · localización</th><th>Clase</th><th>Unidades</th><th>Prom. · mín.</th><th>Unidades</th><th>Prom. · máx.</th><th>Estado</th></tr>`;
+    body=list.map(r=>{const c=r.clase,co=r.m.compresion,ab=r.m.absorcion;const li=+S.cfg.absInd,lp=+S.cfg.absProm;
+      return`<tr data-open="${esc(r.m.id)}">${noCell(r)}<td class="mono" style="white-space:nowrap;font-size:12.5px">${fdate(r.m.fechaMuestreo)}</td>
+      <td class="loc"><div class="e">${esc(r.m.descripcion||r.m.elemento||"—")}${r.m.edificio?`<span class="ed">${esc(r.m.edificio)}</span>`:""}</div><div class="l">${esc(r.m.localizacion)}${r.m.procedencia?` · ${esc(r.m.procedencia)}`:""}</div></td>
+      <td style="white-space:nowrap">${esc(c.n)}<div class="muted" style="font-size:11px">${fmt(c.prom)} / ${fmt(c.ind)} MPa</div></td>
+      <td class="vals">${co?vals(co.mpa,v=>v<c.ind):"—"}</td>
+      <td class="res">${r.cAvg!=null?`<div class="v ${r.cAvg<c.prom?"below":""}">${fmt(r.cAvg)}<span class="pct">${pct(r.ratio)}</span></div><div class="cyl">mín. ${fmt(r.cMin)}</div>`:`<span class="muted">—</span>`}</td>
+      <td class="vals">${ab?vals(ab.pct,v=>v>li):"—"}</td>
+      <td class="res">${r.aAvg!=null?`<div class="v ${r.aAvg>lp?"below":""}">${fmt(r.aAvg)} %</div><div class="cyl">máx. ${fmt(r.aMax)} %</div>`:`<span class="muted">—</span>`}</td>
+      <td>${chip(r.est)}${aprNote(r)}${r.cAvg!=null&&r.aAvg==null?`<div class="muted" style="font-size:11px;margin-top:3px">falta absorción</div>`:""}</td></tr>`;}).join("");}
+  $("thead").innerHTML=head;
+  $("tbody").innerHTML=body||`<tr><td colspan="${cols}" class="empty">${tabRows().length?"Ninguna muestra coincide con los filtros.":"Aún no hay muestras de este tipo. Carga un informe o agrega una muestra manual."}</td></tr>`;
+}
+function renderReps(){
+  const reps=[...S.informes.values()].sort((a,b)=>(b.numero||0)-(a.numero||0));
+  const nal=reps.reduce((n,i)=>n+(i.alertas||[]).length,0);$("repsCount").textContent=reps.length?`· ${reps.length}${nal?` · ${nal} alerta(s) de laboratorio`:""}`:"· ninguno";
+  const KL={cil:"Cilindros / cubos",uni:"Unidades · compresión",abs:"Unidades · absorción",mur:"Muretes"};
+  $("reps").innerHTML=reps.length?reps.map(i=>`<div class="repline"><b class="mono">${esc(i.obra||"")}-${i.numero}</b><span>${KL[i.kind]||""}</span><span>Ensayo ${fdate(i.fechaEnsayo)}</span>${i.ot?`<span class="muted">OT ${esc(i.ot)}</span>`:""}<span class="muted">Muestras ${(i.muestras||[]).map(esc).join(", ")}</span><span class="muted">Cargado ${fdate(i.cargado)}</span>${(i.alertas||[]).length?`<span class="chip c-crit"><span class="ic">!</span>${i.alertas.length} alerta(s)</span>`:""}<span style="margin-left:auto"><button class="btn small danger" type="button" data-delinf="${esc(i.id)}">Eliminar informe</button></span>${S.delInf===i.id?delInfConfirm(i):""}</div>`).join(""):`<div class="muted">Los informes que cargues quedan listados aquí, con las alertas de calibración de equipos.</div>`;
+}
+/* --- eliminar un informe cargado y sus resultados --- */
+const KIND_T={cil:["concreto","mortero","grout"],mur:["murete"],uni:["unidad"],abs:["unidad"]};
+function infImpact(inf){
+  const tipos=KIND_T[inf.kind]||[];const num=String(inf.numero);const hits=[];
+  const same=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((v,i)=>Math.abs(v-b[i])<0.051);
+  const fps=inf.resultados||[];
+  const match=(m,x)=>{if(!x)return false;if(x.infId)return x.infId===inf.id;if(String(x.informe||"")===num&&num)return true;
+    const v=x.mpa||x.pct;return fps.some(f=>codeKey(f.codigo)===codeKey(m.codigo)&&(f.edad==null||x.edad==null||Math.abs(f.edad-x.edad)<=1)&&same(f.vals,v));};
+  for(const m of S.muestras.values()){if(!tipos.includes(m.tipo))continue;const d=clean(m);let n=0;
+    if(inf.kind==="uni"){if(match(m,d.compresion)){delete d.compresion;n=1;}}
+    else if(inf.kind==="abs"){if(match(m,d.absorcion)){delete d.absorcion;n=1;}}
+    else{const before=(d.ensayos||[]).length;d.ensayos=(d.ensayos||[]).filter(e=>!match(m,e));n=before-d.ensayos.length;}
+    if(!n)continue;
+    const empty=!(d.ensayos||[]).length&&!d.compresion&&!d.absorcion;
+    hits.push({m,doc:d,n,borrar:empty&&!m.manual});}
+  return hits;
+}
+function delInfConfirm(inf){const h=infImpact(inf);const nb=h.filter(x=>x.borrar);
+  return`<div class="confirm" style="flex-basis:100%">Se quitan ${h.reduce((a,x)=>a+x.n,0)} resultado(s) de ${h.length} muestra(s)${h.length?` (${h.map(x=>esc(x.m.codigo)).join(", ")})`:""}${nb.length?`; se eliminan ${nb.length} muestra(s) que quedan sin resultados`:""}.${h.length?"":" Este informe no tiene resultados en la tabla; solo se quita de la lista."} ¿Continuar?
+    <button class="btn small danger" type="button" data-delinfok="${esc(inf.id)}">Sí, eliminar</button><button class="btn small" type="button" data-delinfno="1">Cancelar</button></div>`;}
+async function deleteInforme(id){const inf=S.informes.get(id);if(!inf)return;
+  try{const hs=infImpact(inf);for(const h of hs){if(h.borrar)await deleteMuestra(h.m.id);else await writeMuestra(h.doc);}
+    if(S.db)await S.db.doc("informes/"+id).delete();S.informes.delete(id);saveLocal();S.delInf=null;render();
+    const nr=hs.reduce((a,x)=>a+x.n,0),nb=hs.filter(x=>x.borrar).length;toast(`Informe ${inf.numero} eliminado: se quitaron ${nr} resultado(s)${nb?` y ${nb} muestra(s)`:""}.`);}
+  catch(e){toast("No se pudo eliminar por completo: "+(e.message||e.code)+". Vuelve a intentarlo.");}}
+/* --- reiniciar toda la información --- */
+function openReset(){const b=$("impBox");PENDING=null;b.hidden=false;b.className="impbox";b.style.borderColor="var(--crit)";b.style.background="var(--crit-bg)";
+  b.innerHTML=`<span><b style="color:var(--crit-ink)">Borrar todo</b> · se eliminan ${S.muestras.size} muestra(s) y ${S.informes.size} informe(s) de todas las pestañas. No se puede deshacer.<br>
+    <label style="display:inline-flex;gap:6px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="rCfg"> Borrar también los datos del proyecto y las zonas</label></span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn small" type="button" id="rExp">Exportar copia antes</button>
+    <input id="rTxt" placeholder="Escribe BORRAR" style="width:130px;padding:5px 8px;border:1px solid var(--crit);border-radius:5px" autocomplete="off" aria-label="Escribe BORRAR para confirmar">
+    <button class="btn small danger" type="button" id="rOk">Borrar todo</button><button class="btn small" type="button" id="rNo">Cancelar</button></span>`;
+  b.scrollIntoView({block:"nearest"});$("rTxt").focus();}
+function closeBox(){const b=$("impBox");b.hidden=true;b.style.borderColor="";b.style.background="";}
+async function resetAll(alsoCfg){
+  try{if(S.db){for(const id of[...S.muestras.keys()])await S.db.doc("muestras/"+id).delete();for(const id of[...S.informes.keys()])await S.db.doc("informes/"+id).delete();if(alsoCfg)await S.db.doc("config/proyecto").delete();}
+    S.muestras=new Map();S.informes=new Map();if(alsoCfg)S.cfg=clean(CFG0);saveLocal();closeBox();render();toast(alsoCfg?"Se borró toda la información y la configuración del proyecto.":"Se borraron todas las muestras e informes.");}
+  catch(e){toast("El reinicio quedó incompleto: "+(e.message||e.code)+". Vuelve a intentarlo.");render();}}
+function renderClaseTbl(){$("claseTbl").innerHTML=Object.entries(CLASES).map(([k,c])=>`<tr><td>${c.n}${k===S.cfg.claseUni?" (por defecto)":""}</td><td class="num">${fmt(c.prom)} MPa</td><td class="num">${fmt(c.ind)} MPa</td></tr>`).join("")+`<tr><td>Absorción 24 h</td><td class="num">≤ ${fmt(+S.cfg.absProm)} %</td><td class="num">≤ ${fmt(+S.cfg.absInd)} %</td></tr>`;}
+
+/* ================= Gráfica ================= */
+const CH={W:1200,H:640,L:70,R:24,T:104,B:92,font:"Segoe UI, Helvetica Neue, Arial, sans-serif"};
+function chartData(){
+  const kind=TIPOS[S.tab].kind;
+  const all=tabRows().filter(r=>r.ratio!=null&&(!S.f.edif||r.m.edificio===S.f.edif));
+  const keys=[...new Set(all.map(groupKey))].sort((a,b)=>parseFloat(a)-parseFloat(b)||a.localeCompare(b));
+  if(!keys.includes(S.cFc)){const cnt=keys.map(k=>[k,all.filter(r=>groupKey(r)===k).length]).sort((a,b)=>b[1]-a[1]);S.cFc=cnt.length?cnt[0][0]:"";}
+  const pts=all.filter(r=>groupKey(r)===S.cFc).sort((a,b)=>a.pos-b.pos);
+  const D=critD(S.tab);const mm=kind==="cil"||D;
+  pts.forEach((r,i)=>{r._mm=!mm?null:D?mean(pts.slice(0,i+1).map(x=>x.ratio)):i>=2?(pts[i-2].ratio+pts[i-1].ratio+r.ratio)/3:null;});
+  let o={keys,kind,pts,key:S.cFc};
+  if(kind==="cil"||(kind==="mur"&&D)){const fc=+S.cFc;const li=limFor(S.tab,fc);
+    o.title=kind==="mur"?`Muretes · f'm ${fmt(fc/KG2MPA,0)} kg/cm²`:`${TIPOS[S.tab].label} ${fmt(fc,fc%1?1:0)} MPa`;o.sub=kind==="mur"?"Resistencia promedio corregida por esbeltez":"Resistencias a 28 días";
+    o.lim=li/fc;o.limL=`Mín. ${fmt(li)} MPa · ${Math.round(li/fc*100)}%`;o.refL=`${TIPOS[S.tab].fcL} ${fmt(fc,kind==="mur"?2:1)} MPa · 100%`;o.kindLeg="cil";
+    o.leg=[kind==="mur"?"Promedio de prismas":"Resistencia cilindros","Resistencia de diseño","Resistencia mínima aceptación",D?"Promedio acumulado":"Promedio móvil"];
+    o.foot=D?"NSR-10 D.3.8.2.1: el promedio de los resultados debe ser ≥ la resistencia especificada y ningún resultado individual < 80 %. Si la rotura a edad posterior es mayor, se grafica esa resistencia."
+      :"Mínima de aceptación: f'c − 3,5 MPa (NSR-10 C.5.6.3.3 b). Promedio móvil de 3 muestras consecutivas. Si la rotura a edad posterior o testigo es mayor, se grafica esa resistencia.";}
+  else if(kind==="mur"){const fc=+S.cFc;o.title=`Muretes · f'm ${fmt(fc/KG2MPA,0)} kg/cm²`;o.sub="Resistencia promedio corregida por esbeltez";o.refL=`f'm ${fmt(fc,2)} MPa · 100%`;o.leg=["Promedio de prismas","f'm especificado"];o.foot="Resistencia de cada muestra: promedio de sus prismas corregidos por h/t (NTC 3495).";}
+  else{const c=CLASES[S.cFc]||CLASES.PVI;o.title=`Unidades de mampostería · ${c.n}`;o.sub=`Resistencia a compresión sobre área ${c.area}, promedio de 5 unidades`;o.lim=c.ind/c.prom;o.limL=`Mín. individual ${fmt(c.ind)} MPa`;o.refL=`Mín. promedio ${fmt(c.prom)} MPa · 100%`;
+    o.leg=["Promedio de la muestra","Mínimo promedio (clase)","Mínimo individual (clase)"];o.foot="NTC 4205-1. El promedio de cada muestra se compara con el mínimo promedio de su clase; ninguna unidad debe quedar bajo el mínimo individual.";}
+  return o;
+}
+function buildChartSVG(d,interactive){
+  const{W,H,L,R,T,B,font}=CH;const{pts}=d;const lim=d.lim;
+  const C={ink:"#1f2933",ink2:"#52606d",ink3:"#7b8794",grid:"#e9edf1",grid2:"#f3f5f7",frame:"#cbd2d9",blue:"#2f5fa7",mm:"#8fb3e3",green:"#2e9e44",red:"#d62828",band:"#fff6db",low:"#fdeeee"};
+  const vals=pts.map(r=>r.ratio);const lo=Math.min(...vals,lim??1)-0.03,hi=Math.max(...vals,1)+0.05;
+  const y0=Math.floor((lo-0.05)*10)/10+0.05,y1=Math.ceil((hi-0.05)*10)/10+0.05;
+  const nos=pts.map(r=>r.pos);const x0=Math.min(1,...nos),x1=Math.max(...nos)+2;
+  const X=v=>L+(v-x0)/(x1-x0)*(W-L-R),Y=v=>T+(y1-v)/(y1-y0)*(H-T-B);
+  const t=(x,y,txt,o="")=>`<text x="${x}" y="${y}" font-family="${font}" ${o}>${txt}</text>`;
+  let g=`<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`;
+  const zona=S.f.edif?` · ${esc(zonaNombre(S.f.edif))}`:"";
+  g+=t(L,34,esc(d.title)+zona,`font-size="22" font-weight="700" fill="${C.ink}"`);
+  g+=t(L,58,`${esc(d.sub)} · ${pts.length} muestras · ${esc(S.cfg.proyecto||"")}`,`font-size="14" fill="${C.ink2}"`);
+  const lg=[["pt",C.blue,d.leg[0]],["line",C.green,d.leg[1]]];if(lim!=null)lg.push(["line",C.red,d.leg[2]]);if(d.kind==="cil"||d.kindLeg==="cil")lg.push(["dash",C.mm,d.leg[3]]);
+  let lx=L;lg.forEach(l=>{const w=34+l[2].length*6.6;const[k,c,txt]=l;const yy=82;
+    g+=`<line x1="${lx}" x2="${lx+24}" y1="${yy}" y2="${yy}" stroke="${c}" stroke-width="${k==="pt"?2:3}" ${k==="dash"?'stroke-dasharray="7 5"':""} stroke-linecap="round"/>`;
+    if(k==="pt")g+=`<circle cx="${lx+12}" cy="${yy}" r="4" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+    g+=t(lx+30,yy+4.5,esc(txt),`font-size="12.5" fill="${C.ink2}"`);lx+=w+18;});
+  const yTop=Y(y1),yBot=Y(y0);
+  if(lim!=null){g+=`<rect x="${L}" y="${Y(1)}" width="${W-L-R}" height="${Y(lim)-Y(1)}" fill="${C.band}"/>`;g+=`<rect x="${L}" y="${Y(lim)}" width="${W-L-R}" height="${yBot-Y(lim)}" fill="${C.low}"/>`;}
+  else g+=`<rect x="${L}" y="${Y(1)}" width="${W-L-R}" height="${yBot-Y(1)}" fill="${C.low}"/>`;
+  for(let v=y0;v<=y1+1e-9;v+=0.05){const y=Y(v);const major=Math.round(v*100)%10===5;
+    g+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="${major?C.grid:C.grid2}" stroke-width="1"/>`;
+    if(major)g+=t(L-10,y+4,`${Math.round(v*100)}%`,`text-anchor="end" font-size="12" fill="${C.ink3}"`);}
+  const step=x1-x0>60?5:1;
+  for(let n=1;n<=x1;n++){if(n<x0||(n-1)%step)continue;const x=X(n);
+    g+=`<line x1="${x}" x2="${x}" y1="${yTop}" y2="${yBot}" stroke="${C.grid2}" stroke-width="1"/>`;
+    g+=`<line x1="${x}" x2="${x}" y1="${yBot}" y2="${yBot+5}" stroke="${C.frame}"/>`+t(x,yBot+20,n,`text-anchor="middle" font-size="12" fill="${C.ink3}"`);}
+  g+=`<line x1="${L}" x2="${W-R}" y1="${yBot}" y2="${yBot}" stroke="${C.frame}" stroke-width="1.2"/>`;
+  g+=t((L+W-R)/2,yBot+46,"# Muestra (orden por fecha de fundida o elaboración)",`text-anchor="middle" font-size="13" font-weight="600" fill="${C.ink2}"`);
+  g+=`<text transform="translate(22 ${(yTop+yBot)/2}) rotate(-90)" text-anchor="middle" font-family="${font}" font-size="13" font-weight="600" fill="${C.ink2}">% Resistencia a compresión</text>`;
+  g+=`<line x1="${L}" x2="${W-R}" y1="${Y(1)}" y2="${Y(1)}" stroke="${C.green}" stroke-width="2.5"/>`;
+  if(lim!=null)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="${C.red}" stroke-width="2.5"/>`;
+  const tag=(y,c,txt,below)=>{const w=txt.length*6.6+12;return`<rect x="${L+6}" y="${below?y+4:y-21}" width="${w}" height="17" rx="3" fill="${c}"/>`+t(L+6+w/2,below?y+16.5:y-8.5,esc(txt),`text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff"`);};
+  g+=tag(Y(1),C.green,d.refL,false);if(lim!=null)g+=tag(Y(lim),C.red,d.limL,true);
+  const mm=pts.filter(r=>r._mm!=null);
+  if(mm.length>1)g+=`<polyline points="${mm.map(r=>`${X(r.pos).toFixed(1)},${Y(r._mm).toFixed(1)}`).join(" ")}" fill="none" stroke="${C.mm}" stroke-width="3" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(pts.length>1)g+=`<polyline points="${pts.map(r=>`${X(r.pos).toFixed(1)},${Y(r.ratio).toFixed(1)}`).join(" ")}" fill="none" stroke="${C.blue}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  const badLim=lim??1;
+  pts.forEach((r,i)=>{const x=X(r.pos),y=Y(r.ratio);const bad=r.est==="nocumple"||r.ratio<badLim-1e-9;
+    g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${bad?5.5:4.5}" fill="${bad?C.red:C.blue}" stroke="#ffffff" stroke-width="1.8"${interactive?` data-id="${esc(r.m.id)}" style="cursor:pointer"`:""}/>`;
+    if(S.cLbl){const prev=pts[i-1]?.ratio??r.ratio,next=pts[i+1]?.ratio??r.ratio;const valley=r.ratio<prev&&r.ratio<next;
+      g+=`<text x="${x.toFixed(1)}" y="${(valley?y+18:y-10).toFixed(1)}" text-anchor="middle" font-family="${font}" font-size="11" ${bad?'font-weight="700"':""} fill="${bad?C.red:C.ink}" stroke="#ffffff" stroke-width="3" paint-order="stroke" stroke-linejoin="round">${Math.round(r.ratio*100)}%</text>`;}});
+  g+=t(L,H-16,esc(d.foot),`font-size="11" fill="${C.ink3}"`);
+  g+=t(W-R,H-16,`Generado ${fdate(TODAY)}`,`text-anchor="end" font-size="11" fill="${C.ink3}"`);
+  return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(d.title)}">${g}</svg>`;
+}
+function renderChart(){
+  const d=chartData();const sel=$("cFc");
+  sel.innerHTML=d.keys.map(k=>`<option value="${esc(k)}">${esc(groupName(k,d.kind))}</option>`).join("")||`<option value="">Sin datos</option>`;sel.value=S.cFc;
+  $("chartTitle").textContent=`Gráfica de control · ${TIPOS[S.tab].label}`;
+  $("chartNote").textContent=d.kind==="cil"?"Resistencia final de cada muestra (% de la especificada), en orden de fecha de fundida. Respeta el filtro de zona de la tabla.":d.kind==="mur"?"Promedio corregido de los prismas de cada muestra como % de f'm.":"Promedio de compresión de cada muestra como % del mínimo promedio de su clase.";
+  $("btnJpg").disabled=!d.pts.length;
+  if(!d.pts.length){$("chart").innerHTML=`<div class="empty">Aún no hay resultados para graficar.</div>`;return;}
+  $("chart").innerHTML=buildChartSVG(d,true).replace(`width="${CH.W}" height="${CH.H}"`,'style="width:100%;height:auto;display:block"');
+}
+async function exportJpg(){
+  const d=chartData();if(!d.pts.length)return;const img=new Image();
+  img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(buildChartSVG(d,false));
+  try{await img.decode();}catch(e){toast("No se pudo generar la imagen.");return;}
+  const c=document.createElement("canvas");c.width=CH.W*2;c.height=CH.H*2;const ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.95));
+  await saveFile(`Grafica_${normTxt(TIPOS[S.tab].label).replace(/[^A-Z0-9]+/g,"_")}_${String(d.key).replace(".",",")}${S.f.edif?"_"+S.f.edif:""}_${TODAY}.jpg`,blob,"image/jpeg");
+}
+
+/* ================= Lectura de PDF e importación ================= */
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`)){res();return;}const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("No se pudo cargar "+src));document.head.appendChild(s);});}
+const PDFJS="../vendor/pdf.min.js",PDFJS_W="../vendor/pdf.worker.min.js";
+async function readPdf(file){
+  await loadScript(PDFJS);await loadScript(PDFJS_W);window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_W;
+  const doc=await window.pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise;const pages=[];
+  for(let p=1;p<=doc.numPages;p++){const page=await doc.getPage(p);const vp=page.getViewport({scale:1});const tc=await page.getTextContent();const toks=[];let text="";
+    for(const it of tc.items){if(!it.str||!it.str.trim()){text+=it.hasEOL?"\n":" ";continue;}const x0=it.transform[4],y=vp.height-it.transform[5],Ln=it.str.length||1;
+      for(const m of it.str.matchAll(/\S+/g))toks.push({s:m[0],x:x0+(m.index/Ln)*it.width,y,w:(m[0].length/Ln)*it.width});text+=it.str+(it.hasEOL?"\n":" ");}
+    pages.push({toks,text});}
+  return parsePages(pages);
+}
+async function handleFiles(files){
+  const pdfs=[...files].filter(f=>/\.pdf$/i.test(f.name)||f.type==="application/pdf");
+  if(!pdfs.length){toast("Elige archivos PDF de informes.");return;}
+  $("review").innerHTML=`<div class="muted">Leyendo ${pdfs.length} archivo(s)…</div>`;const out=[];
+  for(const f of pdfs){try{const reps=await readPdf(f);if(!reps.length)out.push({file:f.name,error:"No se reconoció ningún informe en el formato compatible en este PDF."});reps.forEach(r=>{r.file=f.name;out.push(buildReview(r));});}catch(e){out.push({file:f.name,error:e.message||String(e)});}}
+  S.review=out;renderReview();
+}
+const KLABEL={cil:"Cilindros / cubos",uni:"Unidades · compresión",abs:"Unidades · absorción",mur:"Muretes (prismas)"};
+function findExisting(tipo,codigo){const m=S.muestras.get(sid(tipo,codigo));if(m)return m;
+  if(TIPOS[tipo].kind==="cil")for(const t of["concreto","mortero","grout"]){const x=S.muestras.get(sid(t,codigo));if(x)return x;}return null;}
+function buildReview(rep){
+  const{info,samples,kind}=rep;const warns=[];const labAlerts=[];
+  const GEN=["CASAS","CASA","EDIFICIO","PROYECTO","TORRE","TORRES","CONJUNTO","RESIDENCIAL","COLIVING","ETAPA"];
+  const words=normTxt(S.cfg.proyecto).split(/[^A-Z0-9]+/).filter(w=>w.length>=4&&!GEN.includes(w));
+  if(info.proyecto&&words.length&&!words.some(w=>normTxt(info.proyecto).includes(w)))warns.push({c:"crit",t:`El informe es del proyecto «${info.proyecto}», no de ${S.cfg.proyecto}.`});
+  if(info.obra&&S.cfg.obra&&String(info.obra)!==String(S.cfg.obra))warns.push({c:"crit",t:`El código de obra del informe es ${info.obra}; el del proyecto es ${S.cfg.obra}.`});
+  const idInf=`${kind}-${info.formato?info.formato+"-":""}${info.numero}`;if(info.numero!=null&&S.informes.has(idInf))warns.push({c:"info",t:`Este informe (${info.numero}) ya se había cargado.`});
+  if(!samples.length)warns.push({c:"crit",t:"No se encontraron muestras en el informe."});
+  const fechaEns=info.fechaEnsayo||(samples[0]&&(samples[0].fechaFin||samples[0].fechaRotura))||"";
+  for(const eq of info.equipos||[])if(eq.proxima&&fechaEns&&eq.proxima<fechaEns){const t=`${eq.nombre} (serie ${eq.serie}) con calibración vencida: próxima calibración ${eq.proxima}, ensayo ${fechaEns}.`;labAlerts.push(t);warns.push({c:"crit",t:"Equipo con calibración vencida: "+t});}
+  const items=samples.map(s=>{
+    const w=[];let tipo,payload,draft;
+    if(kind==="cil"){tipo=s.tipo;const fcM=nomToMpa(s.fcNom);
+      payload={ens:{fecha:info.fechaEnsayo||"",edad:s.edad,mpa:s.mpa,informe:String(info.numero??"")}};if(s.falla&&s.falla.some(x=>x!=null))payload.ens.falla=s.falla;
+      if(s.fechaMuestreo&&info.fechaEnsayo){const calc=dnum(info.fechaEnsayo)-dnum(s.fechaMuestreo);if(Math.abs(calc-s.edad)>1)w.push(`Edad reportada ${s.edad} d; por fechas ${calc} d.`);}
+      if(s.mpa.length<3)w.push(`Solo ${s.mpa.length} espécimen(es); se requieren mínimo 3 de 100×200 mm.`);
+      const fl=rangeFlag(s.mpa);if(fl)w.push(`Dispersión alta: rango ${fmt(fl.r)} % > ${fmt(fl.lim)} %.`);
+      draft={fc:fcM??TIPOS[tipo].defFc,fechaMuestreo:s.fechaMuestreo};s.sum=`${s.edad} d · ${s.mpa.map(v=>fmt(v)).join(" · ")} → ${fmt(mean(s.mpa))} MPa (${pct(mean(s.mpa)/(fcM||TIPOS[tipo].defFc))} de ${fmt(fcM||TIPOS[tipo].defFc)})${s.mezcla?" · "+s.mezcla:""}`;}
+    else if(kind==="mur"){tipo="murete";const fm=s.fmKg!=null?s.fmKg*KG2MPA:TIPOS.murete.defFc;
+      payload={ens:{fecha:s.fechaRotura||info.fechaEnsayo||"",edad:s.edad,mpa:s.mpa,mpaSin:s.mpaSin,factor:s.factor,falla:s.falla,informe:String(info.numero??"")}};
+      draft={fc:fm,fmKg:s.fmKg,fechaMuestreo:s.fechaMuestreo};const a=mean(s.mpa);
+      s.sum=`${s.edad} d · prismas corregidos ${s.mpa.map(v=>fmt(v)).join(" · ")} → ${fmt(a)} MPa (${pct(a/fm)} de f'm ${fmt(s.fmKg,0)} kg/cm²)`;}
+    else{tipo="unidad";const date=s.fechaFin||s.fechaIngreso;
+      payload=kind==="uni"?{compresion:{fecha:date,mpa:s.mpa,informe:String(info.numero??""),ot:info.ot||""}}:{absorcion:{fecha:date,pct:s.abs,informe:String(info.numero??""),ot:info.ot||""}};
+      draft={fechaMuestreo:s.fechaIngreso,clase:S.cfg.claseUni,procedencia:s.procedencia,descripcion:s.descripcion};
+      const v=kind==="uni"?s.mpa:s.abs;if(v.length<5)w.push(`Solo ${v.length} unidades; la norma pide 5.`);
+      s.sum=kind==="uni"?`Compresión ${s.mpa.map(v=>fmt(v)).join(" · ")} → prom. ${fmt(mean(s.mpa))} MPa, mín. ${fmt(Math.min(...s.mpa))}`:`Absorción ${s.abs.map(v=>fmt(v)).join(" · ")} → prom. ${fmt(mean(s.abs))} %`;}
+    const ex=findExisting(tipo,s.codigo);const it={codigo:s.codigo,tipo,kind,payload,s,w,on:true};
+    if(!ex){it.act="nueva";it.draft={tipo,codigo:s.codigo,elemento:guessElemento(tipo,s.localizacion),edificio:guessZona(s.localizacion),localizacion:(s.localizacion||"").replace(/(\d)- (\d)/g,"$1-$2"),notas:"",ensayos:[],...draft};}
+    else{it.exId=ex.id;it.tipo=ex.tipo;
+      if(payload.ens){const e=payload.ens;
+        if(draft.fc!=null&&Math.abs(draft.fc-ex.fc)>0.06)w.push(`Resistencia especificada en el informe ${fmt(draft.fc,2)} MPa; en la tabla ${fmt(ex.fc,2)} MPa.`);
+        if(draft.fechaMuestreo&&ex.fechaMuestreo&&draft.fechaMuestreo!==ex.fechaMuestreo)w.push(`Fecha de muestreo en el informe ${draft.fechaMuestreo}; en la tabla ${ex.fechaMuestreo}.`);
+        const dup=(ex.ensayos||[]).find(x=>(x.fecha&&x.fecha===e.fecha)||(Math.abs(x.edad-e.edad)<=1&&stage(x)===stage(e)));
+        if(dup){const same=dup.mpa.length===e.mpa.length&&dup.mpa.every((v,i)=>Math.abs(v-e.mpa[i])<0.051);if(same){it.act="dup";it.on=false;}else{it.act="diff";it.dup=dup;}}else it.act="add";}
+      else{const k=Object.keys(payload)[0];const cur=ex[k];const nv=payload[k].mpa||payload[k].pct;
+        if(cur){const ov=cur.mpa||cur.pct||[];const same=ov.length===nv.length&&ov.every((v,i)=>Math.abs(v-nv[i])<0.051);if(same){it.act="dup";it.on=false;}else{it.act="diff";it.dupTxt=ov.map(v=>fmt(v)).join(" · ");}}else it.act="add";}}
+    return it;});
+  return{file:rep.file,kind,info,warns,labAlerts,items,idInf};
+}
+function renderReview(){
+  const R=S.review;if(!R.length){$("review").innerHTML="";return;}
+  const ACT={nueva:["new","Muestra nueva"],add:["add","Agregar resultado"],dup:["dup","Ya registrado"],diff:["diff","Valores distintos"]};let pending=0;
+  const html=R.map((rep,ri)=>{
+    if(rep.error)return`<div class="rep"><div class="rh"><b>${esc(rep.file)}</b></div><div class="warns" style="padding-bottom:10px"><div class="warn crit">${esc(rep.error)}</div></div></div>`;
+    const i=rep.info;
+    return`<div class="rep"><div class="rh"><b>${KLABEL[rep.kind]} · Informe ${esc(i.obra||"")}-${i.numero??"?"}</b>${i.fechaEnsayo?`<span class="muted">Ensayo ${fdate(i.fechaEnsayo)}</span>`:""}${i.ot?`<span class="muted">OT ${esc(i.ot)}</span>`:""}<span class="muted">${esc(rep.file)}</span></div>
+    ${rep.warns.length?`<div class="warns">${rep.warns.map(w=>`<div class="warn ${w.c}">${esc(w.t)}</div>`).join("")}</div>`:""}
+    ${rep.items.map((it,ii)=>{if(it.on&&it.act!=="dup")pending++;const a=ACT[it.act];
+      return`<div class="ritem"><input type="checkbox" data-ri="${ri}" data-ii="${ii}" ${it.on?"checked":""} aria-label="Incluir ${esc(it.codigo)}">
+      <div class="rt"><b class="mono">${esc(it.codigo)}</b><span class="tag ${a[0]}">${a[1]}</span><span class="muted">${esc(TIPOS[it.tipo].label)}</span><span>${esc(it.s.localizacion||"")}</span></div>
+      <div class="rv mono">${esc(it.s.sum)}</div>
+      ${it.act==="diff"?`<div class="rv">En la tabla hay otros valores${it.dup?`: ${it.dup.edad} d · ${it.dup.mpa.map(v=>fmt(v)).join(" · ")}`:it.dupTxt?`: ${esc(it.dupTxt)}`:""}. Si lo incluyes, se reemplazan por los del informe.</div>`:""}
+      ${it.w.map(w=>`<div class="rv" style="color:var(--serious-ink)">⚑ ${esc(w)}</div>`).join("")}
+      ${it.act==="nueva"?`<div class="fields">
+        ${it.kind==="cil"?`<label>Tipo<select data-f="tipo" data-ri="${ri}" data-ii="${ii}">${["concreto","mortero","grout"].map(t=>`<option value="${t}" ${t===it.draft.tipo?"selected":""}>${TIPOS[t].label}</option>`).join("")}</select></label>`:""}
+        <label>Elemento<input list="elList" value="${esc(it.draft.elemento)}" data-f="elemento" data-ri="${ri}" data-ii="${ii}" size="16"></label>
+        <label>Zona<select data-f="edificio" data-ri="${ri}" data-ii="${ii}">${zonaOpts(it.draft.edificio)}</select></label>
+        ${it.kind==="uni"||it.kind==="abs"?`<label>Clase<select data-f="clase" data-ri="${ri}" data-ii="${ii}">${Object.entries(CLASES).map(([k,c])=>`<option value="${k}" ${k===it.draft.clase?"selected":""}>${c.n}</option>`).join("")}</select></label>`:`<label>${TIPOS[it.draft.tipo].fcL} MPa<input type="number" step="0.01" value="${it.draft.fc!=null?+(+it.draft.fc).toFixed(2):""}" data-f="fc" data-ri="${ri}" data-ii="${ii}" style="width:80px"></label>`}
+        <label style="flex:1 1 200px">Localización<input value="${esc(it.draft.localizacion)}" data-f="localizacion" data-ri="${ri}" data-ii="${ii}"></label></div>`:""}
+      </div>`;}).join("")}</div>`;}).join("");
+  $("review").innerHTML=html+`<datalist id="elList">${[...new Set(Object.values(ELEMENTOS).flat())].map(e=>`<option value="${e}">`).join("")}</datalist>
+    <div class="rfoot"><button class="btn" type="button" id="revCancel">Descartar</button><button class="btn primary" type="button" id="revSave" ${pending?"":"disabled"}>Guardar ${pending} cambio(s)</button></div>`;
+}
+function nextNo(tipo){let n=0;for(const m of S.muestras.values())if(m.tipo===tipo&&+m.no>n)n=+m.no;return n+1;}
+async function saveReview(){
+  const btn=$("revSave");btn.disabled=true;btn.textContent="Guardando…";let n=0;const errs=[];
+  for(const rep of S.review){if(rep.error)continue;const cods=[];
+    for(const it of rep.items){if(!it.on||it.act==="dup")continue;let doc;
+      if(it.act==="nueva"){const ex=findExisting(it.draft.tipo,it.codigo);
+        if(ex){doc=clean(ex);}else{doc={...clean(it.draft),no:nextNo(it.draft.tipo),creadoPor:rep.idInf};doc.id=sid(doc.tipo,doc.codigo);if(doc.fc!=null)doc.fc=+doc.fc;}}
+      else doc=clean(S.muestras.get(it.exId));
+      if(it.payload.ens){const e={...it.payload.ens,infId:rep.idInf};doc.ensayos=(doc.ensayos||[]).filter(x=>!(it.dup&&x.fecha===it.dup.fecha&&x.edad===it.dup.edad));doc.ensayos.push(e);}
+      else{const k=Object.keys(it.payload)[0];doc[k]={...it.payload[k],infId:rep.idInf};}
+      if(doc.tipo!=="unidad"&&!doc.fc){errs.push(`${it.codigo}: falta la resistencia especificada`);continue;}
+      try{await writeMuestra(doc);n++;cods.push(it.codigo);}catch(e){errs.push(`${it.codigo}: ${e.message||e.code}`);}}
+    if(rep.info.numero!=null){const inf={id:rep.idInf,kind:rep.kind,resultados:rep.items.map(it=>({tipo:it.tipo,codigo:it.codigo,edad:it.payload.ens?it.payload.ens.edad:null,vals:it.payload.ens?it.payload.ens.mpa:(it.payload.compresion||{}).mpa||(it.payload.absorcion||{}).pct||[]})),obra:rep.info.obra||"",numero:rep.info.numero,ot:rep.info.ot||"",fechaEnsayo:rep.info.fechaEnsayo||(rep.items[0]?.payload?.compresion?.fecha||rep.items[0]?.payload?.absorcion?.fecha||""),equipos:rep.info.equipos||[],alertas:rep.labAlerts,muestras:rep.items.map(i=>i.codigo),cargado:TODAY,archivo:rep.file};
+      try{await writeInforme(inf);}catch(e){errs.push(`Informe ${inf.numero}: ${e.message||e.code}`);}}}
+  S.review=[];renderReview();render();toast(errs.length?`Se guardaron ${n} cambio(s). Revisar: ${errs.join("; ")}`:`Se guardaron ${n} cambio(s).`);
+}
+
+/* ================= Persistencia ================= */
+const LSKEY="mi-sti-ens-mamposteria-"+STI.p;
+function saveLocal(){if(S.db)return;try{localStorage.setItem(LSKEY,JSON.stringify({cfg:S.cfg,muestras:[...S.muestras.values()],informes:[...S.informes.values()]}));}catch(e){}stiResumen();}
+function stiResumen(){try{const rows=derive();localStorage.setItem(LSKEY+"-resumen",JSON.stringify({act:TODAY,rows:rows.map(r=>({cod:String(r.m.codigo||r.m.no),tipo:r.tipo,tl:(TIPOS[r.tipo]||{}).label||r.tipo,fecha:r.m.fechaMuestreo||"",elemento:r.m.elemento||"",loc:r.m.localizacion||"",zona:r.m.edificio||"",fc:r.fc||(r.clase&&r.clase.prom)||null,base:r.base,ratio:r.ratio,est:r.est,el:EST[r.est].label}))}));}catch(e){}}
+
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LSKEY)||"null");if(!d)return true;if(d.cfg)S.cfg={...clean(CFG0),...d.cfg};
+  (d.muestras||[]).forEach(m=>S.muestras.set(m.id,m));(d.informes||[]).forEach(i=>S.informes.set(i.id,i));return true;}catch(e){return false;}}
+async function writeMuestra(m){m=clean(m);m.id=sid(m.tipo,m.codigo);m.no=+m.no;m.actualizado=TODAY;if(S.db)await S.db.doc("muestras/"+m.id).set(m);S.muestras.set(m.id,m);saveLocal();}
+async function deleteMuestra(id){if(S.db)await S.db.doc("muestras/"+id).delete();S.muestras.delete(id);saveLocal();}
+async function writeInforme(i){i=clean(i);if(S.db)await S.db.doc("informes/"+i.id).set(i);S.informes.set(i.id,i);saveLocal();}
+async function writeCfg(c){c=clean(c);if(S.db)await S.db.doc("config/proyecto").set(c);S.cfg=c;saveLocal();}
+
+/* ================= Hoja de detalle ================= */
+function openSheet(id,isNew){
+  if(isNew){S.sheet={tipo:"muestra",isNew:true,draft:{tipo:S.tab,no:nextNo(S.tab),codigo:"",fechaMuestreo:TODAY,elemento:(ELEMENTOS[S.tab]||[""])[0],edificio:"",localizacion:"",fc:TIPOS[S.tab].defFc??null,fmKg:S.tab==="murete"?117:undefined,clase:S.cfg.claseUni,ensayos:[],notas:""}};}
+  else{const m=S.muestras.get(id);if(!m)return;S.sheet={tipo:"muestra",isNew:false,draft:clean(m),origId:id};}
+  $("scrim").hidden=false;$("sheet").hidden=false;renderSheet();
+}
+function closeSheet(){S.sheet=null;$("scrim").hidden=true;$("sheet").hidden=true;}
+function renderSheet(){if(S.sheet.tipo==="cfg"){renderCfgSheet();return;}
+  const d=S.sheet.draft;const T=TIPOS[d.tipo];const r=S.sheet.isNew?null:ROWS.find(x=>x.m.id===S.sheet.origId);
+  let resumen="";
+  if(r){if(r.kind==="uni")resumen=r.cAvg!=null?`Compresión prom. ${fmt(r.cAvg)} MPa, mín. ${fmt(r.cMin)} MPa (clase ${r.clase.n}: ${fmt(r.clase.prom)} / ${fmt(r.clase.ind)}).${r.aAvg!=null?` Absorción prom. ${fmt(r.aAvg)} %, máx. ${fmt(r.aMax)} %.`:" Falta absorción."}`:"Sin resultados de compresión.";
+    else resumen=r.base!=null?`Resistencia final ${fmt(r.base)} MPa (${pct(r.ratio)} de ${T.fcL})${r.porPost?`, de la rotura a ${r.post.edad} d; a 28 d fue ${r.base28!=null?fmt(r.base28)+" MPa":"—"}`:""}.${r.kind==="cil"||critD(r.tipo)?` Límite individual ${fmt(limFor(r.tipo,r.fc))} MPa.${r.avg3!=null?` ${critD(r.tipo)?"Prom. acumulado":"Prom. 3 consecutivos"} (${r.avg3Nos.join(", ")}): ${fmt(r.avg3)} MPa.`:""}`:""}`:`Rotura a 28 d prevista el ${fdate(addDays(d.fechaMuestreo,28))}.`;}
+  let ensHtml="",addHtml="";
+  if(T.kind==="uni"){
+    const blk=(k,lbl,u)=>{const e=d[k];return`<div class="eitem"><span class="h">${lbl}${e?` · ${fmt(mean(e.mpa||e.pct))} ${u}`:""}</span>${e?`<button class="btn small danger" type="button" data-delk="${k}">Quitar</button>`:"<span></span>"}<span class="d">${e?`${fdate(e.fecha)} · ${(e.mpa||e.pct).map(v=>fmt(v)).join(" · ")}${e.informe?` · inf. ${esc(e.informe)}`:""}`:"Sin resultado"}</span></div>`;};
+    ensHtml=blk("compresion","Compresión","MPa")+blk("absorcion","Absorción 24 h","%");
+    addHtml=`<div class="addE"><label>Fecha<input id="aF" type="date" value="${TODAY}"></label><label>Informe No.<input id="aInf"></label><label>Ensayo<select id="aK"><option value="compresion">Compresión MPa</option><option value="absorcion">Absorción %</option></select></label><label style="grid-column:1/-1">Valores de las 5 unidades (separados por espacio)<input id="aV" placeholder="30,1 29,4 24,7 27,9 31,5"></label></div>`;}
+  else{const ens=[...(d.ensayos||[])].map((e,i)=>({...e,i})).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
+    ensHtml=ens.length?ens.map(e=>{const a=mean(e.mpa);return`<div class="eitem"><span class="h">${e.edad} días · ${fmt(a)} MPa <span class="muted" style="font-weight:400">(${pct(a/d.fc)})</span></span><button class="btn small danger" type="button" data-dele="${e.i}">Quitar</button>
+      <span class="d">${fdate(e.fecha)} · ${e.mpa.map(v=>fmt(v)).join(" · ")} MPa${e.factor?` · factor h/t ${e.factor.map(v=>fmt(v,3)).join("/")}`:""}${e.falla?` · falla ${e.falla.join("/")}`:""}${e.informe?` · inf. ${esc(e.informe)}`:""}</span></div>`;}).join(""):`<div class="muted">Sin roturas registradas.</div>`;
+    addHtml=`<div class="addE"><label>Fecha de rotura<input id="aF" type="date" value="${TODAY}"></label><label>Informe No.<input id="aInf"></label><label>Edad (días)<input id="aEdad" type="number" placeholder="auto"></label><label style="grid-column:1/-1">Resistencias MPa${T.kind==="mur"?" corregidas por h/t":""} (separadas por espacio)<input id="aV" placeholder="${T.kind==="mur"?"14,1 16,3 13,2":"21,5 20,1 20,9"}"></label></div>`;}
+  $("sheet").innerHTML=`<div class="sh"><div><div class="eyebrow">${S.sheet.isNew?"Nueva muestra":"Muestra"} · ${esc(T.label)}</div><h2 class="mono">${esc(d.codigo||"Sin código")} <span class="muted" style="font-size:14px">${r?"No. "+r.pos:""}</span></h2></div><div style="display:flex;gap:8px;align-items:center">${r?chip(r.est):""}<button class="btn small" type="button" id="shClose">Cerrar</button></div></div>
+  <div class="sb">
+    ${resumen?`<div class="muted" style="font-size:13px">${resumen}</div>`:""}
+    ${r&&ALERT_EST.includes(r.est)?`<div class="warn ${isRev(r)?"info":""}" style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>${isRev(r)?`Alerta revisada el ${fdate(r.m.revisada.fecha)}. No cuenta en la pestaña ni en «Requiere atención».`:"Esta muestra aparece en «Requiere atención». Si ya la revisaste, márcala; volverá a aparecer si su estado cambia."}</span><button class="btn small" type="button" data-rev="${esc(r.m.id)}">${isRev(r)?"Reabrir alerta":"Marcar revisada"}</button></div>`:""}
+    ${r&&!S.sheet.isNew&&RECLASIFICABLE.includes(r.estOrig)?reclHtml(r):""}
+    ${r&&APROBABLE.includes(r.estOrig)&&!r.reclasif?aprHtml(r):""}
+    <div class="form">
+      <label>Código de muestra<input id="sCod" value="${esc(d.codigo)}" ${S.sheet.isNew?"":"readonly"}></label>
+      <label>No. (orden por fecha)<input value="${r?r.pos:"se asigna por fecha"}" readonly tabindex="-1" style="background:var(--surface-2)"></label>
+      <label>${T.kind==="uni"?"Fecha ingreso lab.":T.kind==="mur"?"Fecha de elaboración":"Fecha de muestreo"}<input id="sFecha" type="date" value="${esc(d.fechaMuestreo)}"></label>
+      ${T.kind==="uni"?`<label>Clase<select id="sClase">${Object.entries(CLASES).map(([k,c])=>`<option value="${k}" ${k===(d.clase||S.cfg.claseUni)?"selected":""}>${c.n} (${fmt(c.prom)}/${fmt(c.ind)})</option>`).join("")}</select></label>`
+        :T.kind==="mur"?`<label>f'm (kg/cm²)<input id="sFm" type="number" step="1" value="${d.fmKg??Math.round(d.fc/KG2MPA)}"></label>`
+        :`<label><span id="sFcL">${T.fcL}</span> (MPa)<input id="sFc" type="number" step="0.1" value="${d.fc}"></label>`}
+      ${T.kind==="cil"?`<label>Tipo de ensayo (pestaña)<select id="sTipo">${["concreto","mortero","grout"].map(t=>`<option value="${t}" ${t===d.tipo?"selected":""}>${TIPOS[t].label}</option>`).join("")}</select></label>`:""}
+      <label>Elemento<input id="sEl" list="elList2" value="${esc(d.elemento)}"></label>
+      <label>Zona<select id="sEd">${zonaOpts(d.edificio)}</select></label>
+      <label class="full">Localización<input id="sLoc" value="${esc(d.localizacion)}"></label>
+      ${T.kind==="uni"?`<label class="full">Descripción<input id="sDesc" value="${esc(d.descripcion||"")}"></label><label class="full">Procedencia<input id="sProc" value="${esc(d.procedencia||"")}"></label>`:""}
+      <label class="full">Observaciones de interventoría<textarea id="sNotas" rows="2">${esc(d.notas||"")}</textarea></label>
+    </div>
+    <datalist id="elList2">${(T.kind==="cil"?[...ELEMENTOS.concreto,...ELEMENTOS.mortero,...ELEMENTOS.grout]:(ELEMENTOS[d.tipo]||[])).map(e=>`<option value="${e}">`).join("")}</datalist>
+    <div><h3 style="margin-bottom:8px">Resultados</h3><div class="elist">${ensHtml}</div></div>
+    <div><h3 style="margin-bottom:8px">Agregar resultado manual</h3>${addHtml}<div style="margin-top:8px"><button class="btn small" type="button" id="aAdd">Agregar</button></div></div>
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px">
+      ${S.sheet.isNew?"<span></span>":`<button class="btn danger" type="button" id="sDel">Eliminar muestra</button>`}
+      <button class="btn primary" type="button" id="sSave">Guardar muestra</button></div>
+    <div id="sConfirm"></div>
+  </div>`;
+}
+function reclSel(r){if(!RECLASIFICABLE.includes(r.estOrig))return"";const cur=r.reclasif?"aceptable":"auto";
+  return`<div style="margin-top:4px"><select class="reclSel" data-recl="${esc(r.m.id)}" aria-label="Estado manual de ${esc(r.m.codigo)}" title="Pasa esta muestra a Aceptable NSR a tu criterio" style="font-size:11.5px;padding:2px 4px;border:1px solid var(--line-strong);border-radius:4px;background:var(--surface);max-width:170px">
+    <option value="auto" ${cur==="auto"?"selected":""}>Automático (${EST[r.estOrig].label})</option><option value="aceptable" ${cur==="aceptable"?"selected":""}>${EST.aceptable.label} (manual)</option></select></div>`;}
+async function setReclasif(id,a,quiet){const m=S.muestras.get(id);if(!m)return;const d=clean(m);if(a)d.reclasif={a:"aceptable",obs:a.obs||"",fecha:a.fecha||TODAY};else delete d.reclasif;
+  try{await writeMuestra(d);render();toast(a?`${d.codigo} marcada como «${EST.aceptable.label}» a criterio.`:`${d.codigo}: vuelve al estado calculado.`);
+    if(S.sheet&&S.sheet.origId===id&&S.sheet.tipo!=="cfg"){S.sheet.draft=clean(S.muestras.get(id));renderSheet();}}
+  catch(e){toast("No se pudo guardar: "+(e.message||e.code));render();}}
+function reclHtml(r){const rc=r.m.reclasif;const T=TIPOS[r.tipo];const cur=r.reclasif?"aceptable":"auto";
+  const ctx=r.avg3!=null?`<div class="kv"><span>${critD(r.tipo)?"Promedio acumulado":"Promedio 3 consecutivos"}</span><span><b>${fmt(r.avg3)} MPa (${pct(r.avg3/r.fc)})</b>${critD(r.tipo)?"":` · ${r.avg3Nos.map(esc).join(", ")}`}</span></div>`:"";
+  return`<div style="border:1px solid ${r.reclasif?"var(--warn)":"var(--line-strong)"};${r.reclasif?"background:var(--warn-bg);":""}border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+    <h3>Estado a criterio</h3>
+    <div class="muted" style="font-size:12.5px">Resultado ${fmt(r.base)} MPa (${pct(r.ratio)} de ${T.fcL} ${fmt(r.fc)}), sobre el límite individual de ${fmt(limFor(r.tipo,r.fc))} MPa. Por cálculo queda «${EST[r.estOrig].label}». Solo se puede pasar a «Aceptable NSR»; bajo 100 % nunca es «Cumple».</div>${ctx}
+    <div class="form">
+      <label class="full">Estado<select id="rcA"><option value="auto" ${cur==="auto"?"selected":""}>Automático (${EST[r.estOrig].label})</option><option value="aceptable" ${cur==="aceptable"?"selected":""}>${EST.aceptable.label} (manual)</option></select></label>
+      <label class="full">Observación (opcional)<input id="rcO" value="${esc(rc&&rc.obs||"")}" placeholder="Por qué se acepta"></label>
+    </div>
+    <div><button class="btn small primary" type="button" id="reclSave">Guardar estado</button></div></div>`;}
+function aprHtml(r){const a=r.m.aprobacion;
+  if(a)return`<div style="border:1px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px">
+    <h3 style="color:var(--accent)">Aprobada por concepto externo</h3>
+    <div class="kv"><span>Estado según ensayos</span><span>${EST[r.estOrig].label}</span><span>Soporte</span><span>${esc(a.soporte)}</span><span>Documento / referencia</span><span>${esc(a.ref||"—")}</span><span>Emitido por</span><span>${esc(a.responsable||"—")}</span><span>Fecha</span><span>${fdate(a.fecha)}</span>${a.obs?`<span>Observación</span><span>${esc(a.obs)}</span>`:""}</div>
+    <div><button class="btn small danger" type="button" id="aprDel">Quitar aprobación</button></div></div>`;
+  return`<div style="border:1px solid var(--line-strong);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+    <h3>Aprobar con concepto externo</h3>
+    <div class="muted" style="font-size:12.5px">La muestra no cumple con los ensayos (${EST[r.estOrig].label}). Si un concepto externo la respalda, regístralo aquí: queda como «Aprobada por concepto» y sale de las alertas. Los resultados de laboratorio no se modifican.</div>
+    <div class="form">
+      <label class="full">Soporte<select id="apS">${SOPORTES.map(x=>`<option>${x}</option>`).join("")}</select></label>
+      <label class="full">Documento o referencia<input id="apR" placeholder="Ej.: Oficio 045 del diseñador, informe de núcleos No. 12"></label>
+      <label>Emitido por<input id="apP" placeholder="Nombre / empresa"></label>
+      <label>Fecha<input id="apF" type="date" value="${TODAY}"></label>
+      <label class="full">Observación<textarea id="apO" rows="2"></textarea></label>
+    </div>
+    <div><button class="btn small primary" type="button" id="aprOk">Aprobar muestra</button></div></div>`;}
+async function setAprobacion(id,a){const m=S.muestras.get(id);if(!m)return;const d=clean(m);if(a)d.aprobacion=a;else delete d.aprobacion;
+  try{await writeMuestra(d);render();S.sheet.draft=clean(S.muestras.get(id));renderSheet();toast(a?`Muestra ${d.codigo} aprobada por concepto externo.`:`Se quitó la aprobación de la muestra ${d.codigo}.`);}
+  catch(e){toast("No se pudo guardar: "+(e.message||e.code));}}
+function tipoDeElemento(el,actual){const E=normTxt(el);
+  if(/GROUT|RELLENO|INYECC/.test(E))return"grout";if(/MORTERO/.test(E))return"mortero";
+  if(actual!=="concreto"&&ELEMENTOS.concreto.some(x=>normTxt(x)===E||E.startsWith(normTxt(x))))return"concreto";return actual;}
+function readSheetForm(){const d=S.sheet.draft;if($("sTipo"))d.tipo=$("sTipo").value;const T=TIPOS[d.tipo];
+  d.codigo=$("sCod").value.trim();d.fechaMuestreo=$("sFecha").value;d.elemento=$("sEl").value.trim().toUpperCase();d.edificio=$("sEd").value;d.localizacion=$("sLoc").value.trim();d.notas=$("sNotas").value.trim();
+  if(T.kind==="uni"){d.clase=$("sClase").value;d.descripcion=$("sDesc").value.trim();d.procedencia=$("sProc").value.trim();}
+  else if(T.kind==="mur"){d.fmKg=+$("sFm").value;d.fc=d.fmKg*KG2MPA;}else d.fc=+$("sFc").value;}
+function openCfg(){S.sheet={tipo:"cfg",draft:clean(S.cfg)};$("scrim").hidden=false;$("sheet").hidden=false;renderSheet();}
+function renderCfgSheet(){const d=S.sheet.draft;
+  $("sheet").innerHTML=`<div class="sh"><div><div class="eyebrow">Configuración</div><h2>Datos del proyecto</h2></div><button class="btn small" type="button" id="shClose">Cerrar</button></div>
+  <div class="sb"><div class="form">
+      <label class="full">Nombre del proyecto<input id="cP" value="${esc(d.proyecto)}"></label>
+      <label>Código de obra (laboratorio)<input id="cO" value="${esc(d.obra)}"></label>
+      <label>Laboratorio<input id="cL" value="${esc(d.laboratorio)}"></label>
+      <label class="full">Constructora<input id="cC" value="${esc(d.constructora)}"></label>
+      <label>Clase de unidad por defecto<select id="cCl">${Object.entries(CLASES).map(([k,c])=>`<option value="${k}" ${k===d.claseUni?"selected":""}>${c.n}</option>`).join("")}</select></label>
+      <label class="full">Criterio para mortero, grouting y muretes<select id="cCrit"><option value="C" ${d.critMam!=="D"?"selected":""}>Igual que concreto: NSR-10 C.5.6.3.3 (prom. 3 consecutivos ≥ f'c; individual ≥ f'c − 3,5 MPa)</option><option value="D" ${d.critMam==="D"?"selected":""}>NSR-10 D.3.8.2.1 (promedio de resultados ≥ especificada; individual ≥ 80 %)</option></select></label>
+      <label>Absorción máx. promedio (%)<input id="cAp" type="number" step="0.1" value="${d.absProm}"></label>
+      <label>Absorción máx. individual (%)<input id="cAi" type="number" step="0.1" value="${d.absInd}"></label>
+    </div>
+    <div><h3 style="margin-bottom:4px">Zonas (edificios, manzanas, etapas)</h3>
+      <div class="muted" style="font-size:12.5px;margin-bottom:10px">El código corto aparece en la tabla. Si la localización del informe dice «MZ 2», se asigna sola a MZ2.</div>
+      <div style="display:flex;flex-direction:column;gap:8px"><div class="zrow muted" style="font-size:11.5px"><span>Código</span><span>Nombre</span><span></span></div>
+        ${(d.zonas||[]).map((z,i)=>{const n=[...S.muestras.values()].filter(m=>m.edificio===z.cod).length;return`<div class="zrow"><input data-z="${i}" data-k="cod" value="${esc(z.cod)}" maxlength="12" aria-label="Código"><input data-z="${i}" data-k="nombre" value="${esc(z.nombre)}" aria-label="Nombre"><button class="btn small danger" type="button" data-delz="${i}" ${n?`disabled title="Tiene ${n} muestra(s)"`:""}>Quitar</button></div>`;}).join("")}
+        <div><button class="btn small" type="button" id="cAddZ">+ Agregar zona</button></div></div></div>
+    <div id="cErr"></div>
+    <div style="display:flex;justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px"><button class="btn primary" type="button" id="cSave">Guardar proyecto</button></div>
+</div>`;}
+function readCfgForm(){const d=S.sheet.draft;d.proyecto=$("cP").value.trim();d.obra=$("cO").value.trim();d.laboratorio=$("cL").value.trim();d.constructora=$("cC").value.trim();d.claseUni=$("cCl").value;d.absProm=+$("cAp").value;d.critMam=$("cCrit").value;d.absInd=+$("cAi").value;
+  document.querySelectorAll("#sheet [data-z]").forEach(inp=>{const z=d.zonas[+inp.dataset.z];if(z)z[inp.dataset.k]=inp.dataset.k==="cod"?inp.value.trim().toUpperCase():inp.value.trim();});}
+
+/* ================= Exportar ================= */
+async function saveFile(name,blob,type){
+  try{if(S.downloads){await S.downloads.save({filename:name,data:blob});return true;}
+    const url=URL.createObjectURL(blob.type?blob:new Blob([blob],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);return true;}
+  catch(e){if(e&&e.code==="declined")return false;toast("No se pudo guardar el archivo: "+(e.message||e.code||e));return false;}}
+const slugP=()=>normTxt(S.cfg.proyecto).replace(/[^A-Z0-9]+/g,"_").replace(/^_|_$/g,"")||"Proyecto";
+const estTxt=r=>r.reclasif?`${EST[r.est].label} (a criterio del interventor${r.m.reclasif.obs?": "+r.m.reclasif.obs:""}; ${r.m.reclasif.fecha}; por cálculo: ${EST[r.estOrig].label})`:r.est==="aprobada"?`Aprobada por concepto externo: ${r.m.aprobacion.soporte}${r.m.aprobacion.ref?" ("+r.m.aprobacion.ref+")":""}; según ensayos: ${EST[r.estOrig].label}`:EST[r.est].label;
+async function exportXlsx(){
+  const btn=$("btnExport");btn.disabled=true;
+  try{await loadScript("../vendor/xlsx.full.min.js");const X=window.XLSX;const wb=X.utils.book_new();
+    const title=t=>[[`SUPERVISIÓN TÉCNICA INDEPENDIENTE · ${normTxt(S.cfg.proyecto)} · ${normTxt(TIPOS[t].label)}`],[`Obra lab. ${S.cfg.obra||""} · Constructora ${S.cfg.constructora||""} · Laboratorio ${S.cfg.laboratorio||""} · Generado ${TODAY}`],[]];
+    for(const t of TORDER){const rs=ROWS.filter(r=>r.tipo===t).sort((a,b)=>a.pos-b.pos);const K=TIPOS[t].kind;let aoa;
+      if(K==="cil"){const blk=e=>e?[e.fecha||"",e.edad,e.mpa[0]??"",e.mpa[1]??"",e.mpa[2]??"",+e.avg.toFixed(2),+e.ratio.toFixed(3)]:["","","","","","",""];
+        aoa=[...title(t),["No.","Código","Fecha muestreo","Elemento","Zona","Localización",`${TIPOS[t].fcL} MPa`,"Antes de 28 días","","","","","","","28 días","","","","","","","Edad posterior / testigo","","","","","","","Resistencia final MPa","% final",critD(t)?"Prom. acumulado MPa":"Prom. 3 consecutivos MPa","Límite individual MPa","Estado","Observaciones"],
+          ["","","","","","","","Fecha","Edad","R1","R2","R3","Prom","%","Fecha","Edad","R1","R2","R3","Prom","%","Fecha","Edad","R1","R2","R3","Prom","%"],
+          ...rs.map(r=>[r.pos,r.m.codigo,r.m.fechaMuestreo,r.m.elemento,r.m.edificio,r.m.localizacion,r.fc,...blk(r.temp),...blk(r.d28),...blk(r.post),r.base!=null?+r.base.toFixed(2):"",r.ratio!=null?+r.ratio.toFixed(3):"",r.avg3!=null?+r.avg3.toFixed(2):"",+limFor(r.tipo,r.fc).toFixed(2),estTxt(r)+(r.porPost?` (según rotura a ${r.post.edad} d)`:""),r.m.notas||""])];}
+      else if(K==="mur"){aoa=[...title(t),["No.","Código","Fecha elaboración","Elemento","Zona","Localización","f'm kg/cm²","f'm MPa","Fecha rotura","Edad","P1 MPa corr.","P2 MPa corr.","P3 MPa corr.","Promedio MPa","% f'm","Estado","Observaciones"],
+          ...rs.map(r=>{const e=r.post||r.d28||r.temp;return[r.pos,r.m.codigo,r.m.fechaMuestreo,r.m.elemento,r.m.edificio,r.m.localizacion,Math.round(r.fc/KG2MPA),+r.fc.toFixed(2),e?e.fecha:"",e?e.edad:"",e?.mpa[0]??"",e?.mpa[1]??"",e?.mpa[2]??"",r.base!=null?+r.base.toFixed(2):"",r.ratio!=null?+r.ratio.toFixed(3):"",estTxt(r),r.m.notas||""];})];}
+      else{aoa=[...title(t),["No.","Código","Ingreso lab.","Descripción","Zona","Localización","Procedencia","Clase","Req. prom. MPa","Req. ind. MPa","C1","C2","C3","C4","C5","Compresión prom. MPa","Compresión mín. MPa","A1 %","A2 %","A3 %","A4 %","A5 %","Absorción prom. %","Absorción máx. %","Estado","Observaciones"],
+          ...rs.map(r=>{const c=r.m.compresion?.mpa||[],a=r.m.absorcion?.pct||[];return[r.pos,r.m.codigo,r.m.fechaMuestreo,r.m.descripcion||"",r.m.edificio,r.m.localizacion,r.m.procedencia||"",r.clase.n,r.clase.prom,r.clase.ind,...[0,1,2,3,4].map(i=>c[i]??""),r.cAvg!=null?+r.cAvg.toFixed(2):"",r.cMin??"",...[0,1,2,3,4].map(i=>a[i]??""),r.aAvg!=null?+r.aAvg.toFixed(2):"",r.aMax??"",estTxt(r),r.m.notas||""];})];}
+      const ws=X.utils.aoa_to_sheet(aoa);ws["!cols"]=aoa[3].map((h,i)=>({wch:i===5?34:Math.max(8,String(h).length>14?14:String(h).length+2)}));X.utils.book_append_sheet(wb,ws,TIPOS[t].label.slice(0,30));}
+    const inf=[["Informe","Tipo","Fecha ensayo","OT","Muestras","Alertas","Cargado"],...[...S.informes.values()].sort((a,b)=>a.numero-b.numero).map(i=>[`${i.obra}-${i.numero}`,KLABEL[i.kind]||"",i.fechaEnsayo,i.ot||"",(i.muestras||[]).join(", "),(i.alertas||[]).join(" | "),i.cargado])];
+    X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(inf),"Informes");
+    const buf=X.write(wb,{bookType:"xlsx",type:"array"});
+    await saveFile(`Control_Ensayos_${slugP()}_${TODAY}.xlsx`,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  }catch(e){toast("No se pudo exportar: "+(e.message||e.code||e));}finally{btn.disabled=false;}
+}
+const APPKEY="control-ensayos-mamposteria";
+async function exportProject(){
+  const data={app:APPKEY,version:1,exportado:new Date().toISOString(),cfg:S.cfg,muestras:[...S.muestras.values()],informes:[...S.informes.values()]};
+  if(await saveFile(`Proyecto_${slugP()}_${TODAY}.json`,new Blob([JSON.stringify(data,null,1)],{type:"application/json"}),"application/json"))toast(`Proyecto exportado: ${data.muestras.length} muestras.`);
+}
+let PENDING=null;
+async function readProjectFile(f){
+  let d;try{d=JSON.parse(await f.text());}catch(e){toast("El archivo no es un proyecto válido (JSON dañado).");return;}
+  if(!d||d.app!==APPKEY||!Array.isArray(d.muestras)){toast("El archivo no es un proyecto exportado desde este programa.");return;}
+  if(d.muestras.some(m=>!m||!m.tipo||!TIPOS[m.tipo]||m.codigo==null)){toast("El archivo tiene muestras sin tipo o sin código; no se importó.");return;}
+  PENDING=d;const cfg=d.cfg||{};closeBox();$("impBox").hidden=false;$("impBox").className="impbox";
+  $("impBox").innerHTML=`<span><b>Importar «${esc(cfg.proyecto||"proyecto")}»</b> · ${d.muestras.length} muestras, ${(d.informes||[]).length} informes${d.exportado?` · exportado ${fdate(d.exportado.slice(0,10))}`:""}.<br><span class="muted">Reemplaza todo lo actual (${S.muestras.size} muestras). Si quieres conservarlo, expórtalo antes.</span></span>
+    <span style="display:flex;gap:8px"><button class="btn" type="button" id="impNo">Cancelar</button><button class="btn primary" type="button" id="impOk">Reemplazar e importar</button></span>`;
+}
+async function applyImport(){
+  const d=PENDING;if(!d)return;const btn=$("impOk");btn.disabled=true;btn.textContent="Importando…";
+  try{const nm=d.muestras.map(m=>({...clean(m),id:sid(m.tipo,m.codigo),no:+m.no||0}));const ni=(d.informes||[]).filter(i=>i&&i.id).map(clean);const cfg={...clean(CFG0),...(d.cfg||{})};
+    if(S.db){const km=new Set(nm.map(m=>m.id));for(const id of[...S.muestras.keys()])if(!km.has(id))await S.db.doc("muestras/"+id).delete();
+      const ki=new Set(ni.map(i=>i.id));for(const id of[...S.informes.keys()])if(!ki.has(id))await S.db.doc("informes/"+id).delete();
+      for(const m of nm)await S.db.doc("muestras/"+m.id).set(m);for(const i of ni)await S.db.doc("informes/"+i.id).set(i);await S.db.doc("config/proyecto").set(cfg);}
+    S.muestras=new Map(nm.map(m=>[m.id,m]));S.informes=new Map(ni.map(i=>[i.id,i]));S.cfg=cfg;saveLocal();PENDING=null;closeBox();render();toast(`Proyecto importado: ${nm.length} muestras.`);
+  }catch(e){btn.disabled=false;btn.textContent="Reintentar";toast("La importación quedó incompleta: "+(e.message||e.code)+". Vuelve a intentarlo.");}
+}
+
+/* ================= Eventos ================= */
+let toastT;function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,4500);}
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
+$("file").addEventListener("change",e=>{handleFiles(e.target.files);e.target.value="";});
+$("review").addEventListener("change",e=>{const t=e.target;if(t.dataset.ri==null)return;const it=S.review[+t.dataset.ri].items[+t.dataset.ii];
+  if(t.type==="checkbox"){it.on=t.checked;renderReview();}
+  else if(t.dataset.f){const f=t.dataset.f;it.draft[f]=f==="fc"?+t.value:t.value;
+    if(f==="tipo"){it.tipo=t.value;if(!it.draft.fc)it.draft.fc=TIPOS[t.value].defFc;it.draft.elemento=guessElemento(t.value,it.draft.localizacion);renderReview();}}});
+$("review").addEventListener("click",e=>{if(e.target.id==="revCancel"){S.review=[];renderReview();}if(e.target.id==="revSave")saveReview();});
+$("tabs").addEventListener("click",e=>{if(e.target.closest("[data-badge]"))return;const b=e.target.closest("[data-tab]");if(!b)return;S.tab=b.dataset.tab;S.f.fc="";S.f.est="";S.cFc="";render();});
+async function toggleRev(id){const m=S.muestras.get(id);if(!m)return;const r=ROWS.find(x=>x.m.id===id);const d=clean(m);
+  if(r&&isRev(r))delete d.revisada;else d.revisada={est:r?r.est:"",fecha:TODAY};
+  try{await writeMuestra(d);render();toast(d.revisada?`Alerta de ${d.codigo} marcada como revisada. Vuelve a aparecer si el estado cambia.`:`Alerta de ${d.codigo} reabierta.`);if(S.sheet&&S.sheet.origId===id){S.sheet.draft=clean(S.muestras.get(id));renderSheet();}}
+  catch(e){toast("No se pudo guardar: "+(e.message||e.code));}}
+document.addEventListener("click",e=>{
+  const rv=e.target.closest("[data-rev]");if(rv){e.stopPropagation();toggleRev(rv.dataset.rev);return;}
+  if(e.target.id==="togRev"){S.showRev=!S.showRev;renderAlerts();return;}
+  if(e.target.closest(".reclSel"))return;
+  const ax=e.target.closest("[data-avlab],[data-avdisp],[data-avall],[data-avshow]");
+  if(ax){const d=ax.dataset;
+    if(d.avlab){const inf=S.informes.get(d.avlab);avSetLab([d.avlab],!(inf&&inf.avisoRev));}
+    else if(d.avdisp){const r=ROWS.find(x=>x.m.id===d.avdisp);avSetDisp([d.avdisp],!(r&&dispRev(r)));}
+    else if(d.avall==="lab")avSetLab([...S.informes.values()].filter(i=>(i.alertas||[]).length&&!i.avisoRev).map(i=>i.id),true);
+    else if(d.avall==="disp")avSetDisp(dispRows().filter(r=>!dispRev(r)).map(r=>r.m.id),true);
+    else if(d.avshow){S.avShow={...(S.avShow||{}),[d.avshow]:!(S.avShow&&S.avShow[d.avshow])};renderAlerts();}
+    return;}
+  const bd=e.target.closest("[data-badge]");if(bd){const tb=bd.closest("[data-tab]");S.tab=tb.dataset.tab;S.f.fc="";S.cFc="";S.f.est=bd.dataset.badge==="vencido"?"vencido":"nocumple";render();document.querySelector(".tablewrap").scrollIntoView({block:"start",behavior:"smooth"});return;}
+  const o=e.target.closest("[data-open]");if(o&&!e.target.closest("#sheet"))openSheet(o.dataset.open);
+  const s=e.target.closest(".schip");if(s){S.f.est=S.f.est===s.dataset.est?"":s.dataset.est;renderStatus();renderTable();}});
+$("chart").addEventListener("click",e=>{const c=e.target.closest("circle[data-id]");if(c)openSheet(c.dataset.id);});
+$("chart").addEventListener("mousemove",e=>{const c=e.target.closest("circle[data-id]");const tip=$("tip");if(!c){tip.hidden=true;return;}const r=ROWS.find(x=>x.m.id===c.dataset.id);if(!r)return;
+  tip.innerHTML=`<b>${esc(r.m.codigo)}</b> · No. ${r.pos} · ${esc(r.m.elemento||"")} ${esc(r.m.edificio||"")}<br>${esc(r.m.localizacion)}<br><b>${fmt(r.base)} MPa · ${pct(r.ratio)}</b> · ${EST[r.est].label}`;
+  tip.hidden=false;tip.style.left=Math.min(e.pageX+14,document.documentElement.clientWidth-260)+"px";tip.style.top=(e.pageY+14)+"px";});
+$("chart").addEventListener("mouseleave",()=>$("tip").hidden=true);
+for(const[id,k]of[["fEdif","edif"],["fFc","fc"],["fEst","est"],["fSort","sort"]])$(id).addEventListener("change",e=>{S.f[k]=e.target.value;renderStatus();renderChart();renderTable();});
+$("fQ").addEventListener("input",e=>{S.f.q=e.target.value;renderTable();});
+$("cFc").addEventListener("change",e=>{S.cFc=e.target.value;renderChart();});
+$("cLbl").addEventListener("change",e=>{S.cLbl=e.target.checked;renderChart();});
+$("btnJpg").addEventListener("click",exportJpg);
+$("btnNew").addEventListener("click",()=>openSheet(null,true));
+$("btnCfg").addEventListener("click",openCfg);
+$("btnExport").addEventListener("click",exportXlsx);
+$("btnExpJ").addEventListener("click",exportProject);
+$("btnImpJ").addEventListener("click",()=>$("fileJ").click());
+$("fileJ").addEventListener("change",e=>{const f=e.target.files[0];if(f)readProjectFile(f);e.target.value="";});
+$("impBox").addEventListener("click",e=>{const t=e.target;if(t.id==="impNo"){PENDING=null;closeBox();}if(t.id==="impOk")applyImport();
+  if(t.id==="rNo")closeBox();if(t.id==="rExp")exportProject();
+  if(t.id==="rOk"){if($("rTxt").value.trim().toUpperCase()!=="BORRAR"){toast("Escribe BORRAR para confirmar.");$("rTxt").focus();return;}t.disabled=true;t.textContent="Borrando…";resetAll($("rCfg").checked);}});
+$("btnReset").addEventListener("click",openReset);
+$("reps").addEventListener("click",e=>{const t=e.target;
+  if(t.dataset.delinf){S.delInf=t.dataset.delinf;renderReps();return;}
+  if(t.dataset.delinfno){S.delInf=null;renderReps();return;}
+  if(t.dataset.delinfok){t.disabled=true;t.textContent="Eliminando…";deleteInforme(t.dataset.delinfok);}});
+$("sheet").addEventListener("input",e=>{if(!S.sheet||S.sheet.tipo==="cfg")return;const sel=$("sTipo");if(!sel)return;
+  if(e.target.id==="sEl"){const nt=tipoDeElemento(e.target.value,sel.value);if(nt!==sel.value){sel.value=nt;sel.dispatchEvent(new Event("change",{bubbles:true}));}}});
+$("sheet").addEventListener("change",e=>{if(e.target.id!=="sTipo"||!S.sheet)return;const nt=e.target.value;const prev=S.sheet.prevTipo||S.sheet.draft.tipo;
+  const fc=$("sFc");if(fc&&(+fc.value===TIPOS[prev].defFc||!fc.value))fc.value=TIPOS[nt].defFc;
+  const l=$("sFcL");if(l)l.textContent=TIPOS[nt].fcL;S.sheet.prevTipo=nt;
+  if(nt!==S.sheet.draft.tipo)toast(`Al guardar, la muestra pasará a la pestaña ${TIPOS[nt].label}. Revisa la resistencia especificada.`);});
+$("tbody").addEventListener("change",e=>{const sl=e.target.closest(".reclSel");if(sl)setReclasif(sl.dataset.recl,sl.value==="auto"?null:{fecha:TODAY});});
+$("alerts").addEventListener("toggle",e=>{const d=e.target;if(d.classList&&d.classList.contains("aviso"))S.avOpen={...(S.avOpen||{}),[d.dataset.cat]:d.open};},true);
+$("scrim").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&S.sheet)closeSheet();});
+$("sheet").addEventListener("click",async e=>{const t=e.target;
+  if(t.id==="shClose"){closeSheet();return;}
+  if(t.id==="aprOk"){const ref=$("apR").value.trim();if(!ref){toast("Escribe el documento o referencia que respalda la aprobación.");$("apR").focus();return;}
+    const id=S.sheet.origId;const r=ROWS.find(x=>x.m.id===id);setAprobacion(id,{soporte:$("apS").value,ref,responsable:$("apP").value.trim(),fecha:$("apF").value||TODAY,obs:$("apO").value.trim(),estOriginal:r?r.estOrig:""});return;}
+  if(t.id==="aprDel"){setAprobacion(S.sheet.origId,null);return;}
+  if(t.id==="reclSave"){const v=$("rcA").value;setReclasif(S.sheet.origId,v==="auto"?null:{obs:$("rcO").value.trim(),fecha:TODAY});return;}
+  if(S.sheet.tipo==="cfg"){
+    if(t.id==="cAddZ"){readCfgForm();S.sheet.draft.zonas.push({cod:"",nombre:""});renderSheet();return;}
+    if(t.dataset.delz!=null){readCfgForm();S.sheet.draft.zonas.splice(+t.dataset.delz,1);renderSheet();return;}
+    if(t.id==="cSave"){readCfgForm();const d=S.sheet.draft;d.zonas=d.zonas.filter(z=>z.cod||z.nombre);const err=m=>{$("cErr").innerHTML=`<div class="warn crit">${esc(m)}</div>`;};
+      if(!d.proyecto){err("Escribe el nombre del proyecto.");return;}if(d.zonas.some(z=>!z.cod)){err("Cada zona necesita un código.");return;}
+      const cods=d.zonas.map(z=>z.cod);if(new Set(cods).size!==cods.length){err("Hay códigos de zona repetidos.");return;}
+      const hu=[...new Set([...S.muestras.values()].map(m=>m.edificio).filter(c=>c&&!cods.includes(c)))];if(hu.length){err(`Hay muestras asignadas a ${hu.join(", ")}. Mantén ese código o reasigna las muestras.`);return;}
+      if(!(d.absProm>0&&d.absInd>0)){err("Revisa los límites de absorción.");return;}
+      t.disabled=true;try{await writeCfg(d);toast("Proyecto guardado.");closeSheet();render();}catch(er){t.disabled=false;err("No se pudo guardar: "+(er.message||er.code));}}
+    return;}
+  const d=S.sheet.draft;const T=TIPOS[d.tipo];
+  if(t.dataset.dele!=null){readSheetForm();d.ensayos.splice(+t.dataset.dele,1);renderSheet();toast("Resultado quitado. Guarda la muestra para confirmar.");return;}
+  if(t.dataset.delk){readSheetForm();delete d[t.dataset.delk];renderSheet();toast("Resultado quitado. Guarda la muestra para confirmar.");return;}
+  if(t.id==="aAdd"){readSheetForm();const v=parseList($("aV").value);const f=$("aF").value;if(!v.length||!f){toast("Escribe la fecha y los valores.");return;}
+    if(T.kind==="uni"){const k=$("aK").value;d[k]=k==="compresion"?{fecha:f,mpa:v,informe:$("aInf").value.trim()}:{fecha:f,pct:v,informe:$("aInf").value.trim()};}
+    else{const edad=$("aEdad").value?+$("aEdad").value:(d.fechaMuestreo?dnum(f)-dnum(d.fechaMuestreo):28);(d.ensayos=d.ensayos||[]).push({fecha:f,edad,mpa:v,informe:$("aInf").value.trim(),origen:"manual"});}
+    renderSheet();return;}
+  if(t.id==="sSave"){readSheetForm();
+    if(!d.codigo){toast("La muestra necesita un código.");return;}
+    const T2=TIPOS[d.tipo];const newId=sid(d.tipo,d.codigo);const moved=!S.sheet.isNew&&newId!==S.sheet.origId;
+    if((S.sheet.isNew||moved)&&S.muestras.has(newId)){toast(`Ya existe la muestra ${d.codigo} en ${T2.label}.`);return;}
+    if(T2.kind!=="uni"&&!(d.fc>0)){toast(`Falta ${T2.fcL}.`);return;}
+    if(S.sheet.isNew)d.manual=true;
+    t.disabled=true;try{await writeMuestra(d);if(moved)await deleteMuestra(S.sheet.origId);
+      const goTab=d.tipo!==S.tab;if(goTab){S.tab=d.tipo;S.f.fc="";S.f.est="";S.cFc="";}
+      toast(moved?`Muestra ${d.codigo} movida a ${T2.label}.`:`Muestra ${d.codigo} guardada${goTab?` en ${T2.label}`:""}.`);closeSheet();render();}
+    catch(er){t.disabled=false;toast("No se pudo guardar: "+(er.message||er.code));}return;}
+  if(t.id==="sDel"){$("sConfirm").innerHTML=`<div class="confirm">¿Eliminar la muestra ${esc(d.codigo)} y todos sus resultados? <button class="btn small danger" type="button" id="sDelOk">Sí, eliminar</button><button class="btn small" type="button" id="sDelNo">Cancelar</button></div>`;return;}
+  if(t.id==="sDelNo"){$("sConfirm").innerHTML="";return;}
+  if(t.id==="sDelOk"){try{await deleteMuestra(S.sheet.origId);toast("Muestra eliminada.");closeSheet();render();}catch(er){toast("No se pudo eliminar: "+(er.message||er.code));}}
+});
+
+/* ================= Arranque ================= */
+render();
+(async()=>{
+  const use=n=>window.claude&&window.claude.use?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+  const[db,dl]=await Promise.all([use("db"),use("downloads")]);S.downloads=dl;
+  if(!db){const ok=loadLocal();stiResumen();render();
+    if(ok)$("syncState").textContent="Guardado en este navegador";
+    else{$("syncState").textContent="Sin almacenamiento";$("banner").hidden=false;$("banner").textContent="Este navegador no permite guardar datos. Puedes cargar y revisar informes, pero exporta el proyecto antes de cerrar.";}
+    return;}
+  S.db=db;$("syncState").textContent="Sincronizado";
+  db.collection("muestras").onSnapshot(snap=>{S.muestras=new Map();snap.docs.forEach(d=>{const v=d.data();if(v&&v.tipo)S.muestras.set(d.id,{...v,id:d.id});});render();},err=>{$("syncState").textContent="Sin sincronización ("+err.code+")";});
+  db.doc("config/proyecto").onSnapshot(snap=>{if(snap.exists)S.cfg={...clean(CFG0),...snap.data()};render();},()=>{});
+  db.collection("informes").onSnapshot(snap=>{S.informes=new Map();snap.docs.forEach(d=>S.informes.set(d.id,{...d.data(),id:d.id}));render();},()=>{});
+})();
+
+</script>
+
+</body>
+</html>
