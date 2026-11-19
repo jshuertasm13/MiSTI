@@ -62,7 +62,7 @@ function vLogin(){
   return `<div class="login"><section class="hero"><div class="mark"><span class="logo">${IC.logo}</span><div><h1>Mi STI</h1><div style="color:var(--rail-dim);font-size:13px;margin-top:4px">Supervisión técnica independiente · NSR-10 Título I</div></div></div>
     <div style="display:flex;flex-direction:column;gap:18px"><p>Control documental y control de calidad de la obra en un solo lugar: licencias y diseños, materiales, ensayos, inspecciones, no conformidades, informes y registro fotográfico.</p>
     <ul><li>Cada firma con sus proyectos, usuarios y colores</li><li>El constructor consulta y responde las no conformidades</li><li>Informes y registros exportables a PDF</li></ul></div>
-    <small style="color:var(--rail-dim)">Versión de prueba · los datos se guardan en este navegador.</small></section>
+    <small style="color:var(--rail-dim)">Mi STI v2.0 (19 nov 2026) · los datos se guardan en este navegador.</small></section>
   <section class="box"><div><div class="eyebrow">Acceso</div><h2 style="font-size:24px;margin-top:4px">Ingresa a tu cuenta</h2></div>
     <form id="loginForm" autocomplete="on"><label class="fl">Usuario<input type="text" id="lgUser" autocomplete="username" required autofocus></label>
     <label class="fl">Contraseña<input type="password" id="lgPass" autocomplete="current-password" required></label>
