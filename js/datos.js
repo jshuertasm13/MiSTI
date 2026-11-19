@@ -95,6 +95,11 @@ const REV={
     ["Escaleras",/escalera/i],
     ["Cuadro de revisiones y firma del diseñador",/revisi[oó]n|matr[ií]cula/i]]}
 };
+/* Qué buscar en cada ítem del contenido mínimo (guía para la revisión manual) */
+const REV_GUIA={
+  suelos:{ref:"NSR-10 Título H (H.2 y H.3)",items:["Número de pisos, sótanos, cargas por columna o muro y área del lote.","Mínimo 3 sondeos y profundidad según H.3.2 (al menos 1,5 veces el ancho de la cimentación bajo el apoyo). Plano de localización.","Humedad, límites, granulometría, peso unitario, compresión inconfinada o corte directo, consolidación si aplica.","Perfil por sondeo con descripción de estratos y nivel freático medido.","Cohesión, ángulo de fricción, módulo de elasticidad y parámetros de consolidación usados en el diseño.","Capacidad admisible con factor de seguridad (H.4), por tipo y profundidad de cimentación.","Asentamientos totales y diferenciales comparados con los límites de H.4.9.","Tipo de cimentación recomendada, profundidad de desplante y alternativas evaluadas.","Excavaciones, estabilidad de taludes, empujes sobre muros y contención provisional, con efecto sobre los vecinos.","Perfil de suelo para diseño sísmico (A a F), Fa, Fv y efectos locales.","Manejo de aguas, protección de excavaciones, mejoramiento del suelo y controles en obra.","Nombre, firma y matrícula del ingeniero geotecnista; fecha del estudio."]},
+  estructural:{ref:"NSR-10 Títulos A, B y C",items:["Municipio, zona de amenaza, Aa, Av, perfil de suelo, Fa y Fv coherentes con el estudio geotécnico.","Grupo de uso (A.2.5) y coeficiente de importancia I.","Sistema estructural, capacidad de disipación (DES, DMO, DMI) y R0, Ω0.","Cargas muertas y vivas por uso según el Título B.","Combinaciones de carga de B.2.3 y B.2.4.","Irregularidades en planta y altura (A.3.3) y reducción de R.","Derivas por piso menores al 1 % de la altura (A.6.4).","Diseño de vigas, columnas, muros y losas con cuantías y detallado sísmico.","Diseño de la cimentación con las cargas y la capacidad del estudio geotécnico.","f'c y fy especificados por elemento.","Nombre, firma y matrícula del diseñador estructural."]},
+  planos:{ref:"NSR-10 A.1.5 y Título C",items:["Notas generales: f'c, fy, recubrimientos, normas y cargas de diseño.","Planta, cortes y despiece de la cimentación.","Secciones, refuerzo longitudinal y estribos de columnas, con zonas confinadas.","Despiece de vigas con refuerzo superior, inferior, flejes y bastones.","Refuerzo de losas, viguetas o placas.","Recubrimientos por tipo de elemento.","Longitudes de traslapo, desarrollo y ganchos, y zonas donde se permiten traslapos.","Despiece de escaleras.","Cuadro de revisiones, fecha, firma y matrícula del diseñador."]}};
 const DOC_TIPOS={licencia:"Licencia de construcción",suelos:"Estudio geotécnico",estructural:"Memoria de cálculo estructural",planos:"Planos estructurales",otro:"Otro documento"};
 const DOC_CAT={licencia:"Licencias y permisos",suelos:"Diseños y estudios",estructural:"Diseños y estudios",planos:"Diseños y estudios",otro:"Contratos y otros"};
 const LIC_KEYS=["Número","Curaduría","Fecha de expedición","Vigencia","Titular","Dirección","Área construida","Unidades","Uso"];
@@ -289,26 +294,26 @@ function proyectoEnsayo(){
       {id:"demo-18",fecha:"2026-10-30",desc:"Mampostería de la Torre 2, piso 3",torre:"Torre 2"},
       {id:"demo-19",fecha:"2026-11-15",desc:"Vista general de la obra desde el acceso",torre:"General"},
       {id:"demo-20",fecha:"2026-11-18",desc:"Formaleta de la placa del piso 5, Torre 1",torre:"Torre 1"}],
-    fotoDesc:{},
+    fotoDesc:{},fotoPrincipal:"demo-19",
     avance:[{act:"Cimentación Torre 1",pct:100},{act:"Estructura Torre 1",pct:48},{act:"Cimentación Torre 2",pct:100},{act:"Mampostería estructural Torre 2",pct:62},{act:"Placas Torre 2",pct:55}],
     informes:[
-      {id:"AM-01",tipo:"mensual",desde:"2026-09-01",hasta:"2026-09-30",creado:"2026-10-01",flujo:"aprobado",
+      {id:"AM-001",tipo:"mensual",desde:"2026-09-01",hasta:"2026-09-30",creado:"2026-10-01",flujo:"aprobado",
         txtCert:"Se recibió y revisó el certificado del mortero de pega premezclado, conforme a la NTC 3329.",txtEns:"Las roturas a 28 días del periodo cumplen, salvo la muestra 6 de las pantallas del piso 2, que está por debajo del límite individual.",
         txtInsp:"Se revisaron la mampostería del piso 1 de la Torre 2, la placa del piso 2 de ambas torres y la escalera; todos los elementos quedaron conformes.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",10,22],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",0,18],["Placas Torre 2",0,15]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-9","demo-17"],concl:"El avance de septiembre fue conforme al programa.\n- Gestionar con el laboratorio las roturas a 28 días de octubre.\n- Mantener el control de distanciadores en columnas."},
-      {id:"AM-02",tipo:"mensual",desde:"2026-10-01",hasta:"2026-10-31",creado:"2026-11-01",flujo:"aprobado",
+      {id:"AM-002",tipo:"mensual",desde:"2026-10-01",hasta:"2026-10-31",creado:"2026-11-01",flujo:"aprobado",
         txtCert:"Se recibió el certificado de la malla electrosoldada D-131.",txtEns:"Se generó la NC-02 por la muestra 6 y la NC-03 por el grouting GR-02. La muestra 8 queda con promedio bajo y se sigue de cerca.",
         txtInsp:"Se revisaron las columnas del piso 3 y la placa del piso 4 de la Torre 1; se hizo corregir la falta de distanciadores en dos columnas.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",22,38],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",18,45],["Placas Torre 2",15,35]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-14","demo-18"],concl:"Quedan abiertas dos no conformidades por resistencia (NC-02 y NC-03).\n- Presentar núcleos y concepto del diseñador para la NC-02.\n- Presentar el plan de verificación del grouting para la NC-03."},
-      {id:"IS-01",tipo:"semanal",desde:"2026-11-09",hasta:"2026-11-15",creado:"2026-11-16",flujo:"aprobado",
+      {id:"IS-001",tipo:"semanal",desde:"2026-11-09",hasta:"2026-11-15",creado:"2026-11-16",flujo:"aprobado",
         txtInsp:"Se revisaron las pantallas del piso 4 de la Torre 1 y la mampostería del piso 4 de la Torre 2. En la Torre 2 se hizo completar el refuerzo de escalerilla antes de continuar.",
         aspectos:"Completar el refuerzo horizontal de escalerilla en todas las hiladas indicadas en planos.\nLimpiar las dovelas por ventanas de inspección antes de inyectar.",
         txtDoc:"Se recibió la revisión 1.1 de los planos de la Torre 2 con el detalle de dovelas.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",42,45],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",55,58],["Placas Torre 2",45,50]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-11","demo-19"],concl:"",txtCert:"",txtEns:""},
-      {id:"IS-02",tipo:"semanal",desde:"2026-11-16",hasta:"2026-11-22",creado:"2026-11-18",flujo:"borrador",
+      {id:"IS-002",tipo:"semanal",desde:"2026-11-16",hasta:"2026-11-22",creado:"2026-11-18",flujo:"borrador",
         txtInsp:"Se revisaron las columnas del piso 5 de la Torre 1, con traslapos mal ubicados en dos columnas (NC-06), y el armado de la placa del piso 5.",
         aspectos:"Columnas piso 5, Torre 1: ubicar los traslapos en el tercio medio.",txtDoc:"Se recibió la póliza de responsabilidad civil, en revisión.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",45,48],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",58,62],["Placas Torre 2",50,55]].map(([act,ant,pct])=>({act,ant,pct})),
@@ -316,7 +321,7 @@ function proyectoEnsayo(){
     actividad:[
       {f:"2026-11-18",q:"Andrés Ruiz",t:"Inspección de la placa del piso 5, Torre 1: armado revisado."},
       {f:"2026-11-17",q:"Andrés Ruiz",t:"No conformidad NC-06 en borrador."},
-      {f:"2026-11-16",q:"Laura Gómez",t:"Informe IS-01 aprobado: informe semanal."},
+      {f:"2026-11-16",q:"Laura Gómez",t:"Informe IS-001 aprobado: informe semanal."},
       {f:"2026-11-10",q:"Laura Gómez",t:"Respuesta a NC-04 rechazada."},
       {f:"2026-11-06",q:"Mateo Rincón",t:"Respuesta del constructor a NC-02."}]};
   /* Ensayos (los leen las apps de concreto y mampostería) */

@@ -29,7 +29,7 @@ async function hashPass(pass,salt){
   try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(txt));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
   catch(e){let h=5381;for(let i=0;i<txt.length;i++)h=((h<<5)+h+txt.charCodeAt(i))|0;return "x"+(h>>>0).toString(16);}
 }
-const DATA_V=2;
+const DATA_V=3;
 async function cargarDatos(){
   try{const raw=localStorage.getItem(LS);D=raw?JSON.parse(raw):null;}catch(e){D=null;}
   if(!D||!D.v||D.v>DATA_V){D=await seedDatos();
@@ -54,13 +54,15 @@ async function migrarDatos(){
       if(p.id==="P3"){const keep=[];for(const rol of["director","residente","constructor"]){const m=p.miembros.find(x=>x.rol===rol&&x.uid!=="u0");if(m)keep.push(m);}
         if(p.miembros.some(x=>x.uid==="u0"))keep.push(p.miembros.find(x=>x.uid==="u0"));p.miembros=keep;}});
   }
+  if(D.v<3&&D.demo){const p3=D.proyectos.find(p=>p.id==="P3");if(p3&&!p3.fotoPrincipal)p3.fotoPrincipal="demo-19";}
   for(const p of D.proyectos||[]){
     (p.inspecciones||[]).forEach(normInsp);
     /* consecutivo independiente por tipo de informe */
-    if((p.informes||[]).some(r=>!/^(IS|AM|CTO)-/.test(r.id))){
-      const nuevo=r=>/^(IS|AM|CTO)-/.test(r.id);const n={};
+    (p.informes||[]).forEach(r=>{const m=/^(IS|AM|CTO)-(\d{1,2})$/.exec(r.id);if(m){const old=r.id;r.id=m[1]+"-"+m[2].padStart(3,"0");(p.actividad||[]).forEach(a=>{a.t=a.t.split(old+" ").join(r.id+" ");});}});
+    if((p.informes||[]).some(r=>!/^(IS|AM|CTO)-\d{3}$/.test(r.id))){
+      const nuevo=r=>/^(IS|AM|CTO)-\d{3}$/.test(r.id);const n={};
       for(const t of["semanal","mensual","final"])n[t]=Math.max(0,...p.informes.filter(r=>r.tipo===t&&nuevo(r)).map(r=>parseInt(r.id.replace(/^\D+/,""),10)||0));
-      p.informes.slice().sort((a,b)=>(a.creado||"").localeCompare(b.creado||"")||(a.desde||"").localeCompare(b.desde||"")).forEach(r=>{if(nuevo(r))return;const old=r.id;r.id=REPP[r.tipo]+String(++n[r.tipo]).padStart(2,"0");
+      p.informes.slice().sort((a,b)=>(a.creado||"").localeCompare(b.creado||"")||(a.desde||"").localeCompare(b.desde||"")).forEach(r=>{if(nuevo(r))return;const old=r.id;r.id=REPP[r.tipo]+String(++n[r.tipo]).padStart(3,"0");
         (p.actividad||[]).forEach(a=>{a.t=a.t.split(old+" ").join(r.id+" ");});});}
   }
   D.v=DATA_V;
@@ -355,6 +357,10 @@ async function exportPDF(html,filename){
   toast("Generando PDF…");
   try{await loadScript(H2P);}catch(e){toast("No se pudo cargar el generador de PDF.");return;}
   const el=document.createElement("div");el.className="pdfdoc";el.innerHTML=html;
+  for(const sv of [...el.querySelectorAll("svg.pdfchart")]){try{const w=+sv.getAttribute("width"),h=+sv.getAttribute("height");
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(sv.outerHTML);});
+    const c=document.createElement("canvas");c.width=w*2;c.height=h*2;const g=c.getContext("2d");g.scale(2,2);g.drawImage(img,0,0,w,h);
+    const im=document.createElement("img");im.src=c.toDataURL("image/png");im.style.width="100%";sv.replaceWith(im);}catch(e){}}
   let blob;
   try{blob=await window.html2pdf().set({margin:[10,10,12,10],image:{type:"jpeg",quality:0.92},html2canvas:{scale:2,scrollX:0,scrollY:0,backgroundColor:"#ffffff",useCORS:true},jsPDF:{unit:"mm",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","figure","p",".firmas",".hdr",".pgrid figure",".pgrid2 figure","h2"]}}).from(el).outputPdf("blob");}
   catch(e){toast("No se pudo generar el PDF.");return;}
@@ -384,9 +390,11 @@ function shimDoc(root,signal){return{
   addEventListener:(t,f,o)=>(t==="keydown"?document:root).addEventListener(t,f,{signal}),
   get body(){return document.body},get head(){return document.head},get documentElement(){return document.documentElement}};}
 function ctxEns(p,tab,onChange){return{p:p.id,proyecto:p.nombre||"",obra:"",constructora:p.constructora||"",laboratorio:"",zonas:zonasDe(p),tab,onChange,embebida:true};}
+/* Vista del constructor: sin carga de informes, sin «Requiere atención» y sin edición */
+const ENS_RO_CSS=".grid2,#btnNew,.reclSel,#sheet .sf,#sheet button:not(#shClose),#sheet .addE,#sheet .confirm{display:none!important}#sheet input,#sheet select,#sheet textarea{pointer-events:none;background:#f4f4f1}";
 function montarEnsayo(host,app,ctx){const M=(window.ENS_MOD||{})[app];if(!M){host.innerHTML='<div class="empty">No se pudo cargar el módulo de ensayos.</div>';return{destroy(){}};}
   const t=temaEns();host.style.setProperty("--accent",t.accent);host.style.setProperty("--accent-ink",t.accentInk);host.style.setProperty("--accent-soft",t.accentSoft);
-  const root=host.attachShadow({mode:"open"});root.innerHTML=`<style>${M.css}</style><div class="ensbody">${M.html}</div>`;
+  const root=host.attachShadow({mode:"open"});root.innerHTML=`<style>${M.css}</style>${ctx.soloLectura?`<style>${ENS_RO_CSS}</style>`:""}<div class="ensbody">${M.html}</div>`;
   const ac=new AbortController();let api={};try{api=M.run(root,ctx,shimDoc(root,ac.signal))||{};}catch(e){console.error(e);}
   api.destroy=()=>ac.abort();return api;}
 /* Calcula el resumen de los proyectos que tienen ensayos guardados y aún no lo tienen */

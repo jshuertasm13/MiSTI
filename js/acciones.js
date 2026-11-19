@@ -22,8 +22,8 @@ async function aiFromRead(prompt,rd){
   return aiJSON(prompt+"\n\nTEXTO:\n"+rd.text.slice(0,45000));
 }
 async function ingestDoc(tipo,rd,fuente,arch){
-  const p=P();if(tipo==="auto")tipo=rd.scanned?"otro":guessTipo(rd.text);
-  const d={id:nextId(p.documentos,"D"),tipo,nombre:DOC_TIPOS[tipo],version:"1",fecha:TODAY,flujo:"borrador",datos:{},fuente,archivo:arch||null,_text:rd.text};
+  const p=P();if(tipo==="auto"){tipo=guessTipo(rd.scanned?"":rd.text);if(tipo==="otro"||!tipo){const f=String(fuente||"").toLowerCase().replace(/[_.-]+/g," ");tipo=/suelo|geot/.test(f)?"suelos":/memoria|calculo|cálculo/.test(f)?"estructural":/plano/.test(f)?"planos":/licencia/.test(f)?"licencia":tipo||"otro";}}
+  const d={id:nextId(p.documentos,"D"),tipo,nombre:DOC_TIPOS[tipo],version:"1",fecha:TODAY,flujo:"borrador",datos:{},fuente,archivo:arch||null,_text:rd.text,_scan:!!rd.scanned};
   let r={err:"off"};
   if(tipo==="licencia"){
     if(aiReady())r=await aiFromRead(`Eres asistente de una firma de supervisión técnica en Colombia. Extrae los datos de esta licencia de construcción. Responde solo JSON con: {"numero","curaduria","fechaExpedicion" (AAAA-MM-DD),"vigenciaMeses" (número),"titular","direccion","areaConstruida","unidades","uso","responsables":[{"rol","nombre","matricula"}]}. Usa "" si un dato no aparece.`,rd);
@@ -151,7 +151,14 @@ document.addEventListener("click",async ev=>{
   const el=ev.target.closest("[data-act]");
   if(!el){if(ev.target===$("scrim"))closeSheet();if(ev.target.closest("#lightbox"))$("lightbox").hidden=true;return;}
   const act=el.dataset.act,v=el.dataset.v,id=el.dataset.id;const p=P();
+  if(act!=="delRec"&&U.delArm){U.delArm=null;}
   switch(act){
+    case"delRec":{const k=el.dataset.k,key=k+":"+id;if(U.delArm!==key){U.delArm=key;render();break;}U.delArm=null;
+      const L={doc:"documentos",cert:"certificados",insp:"inspecciones",nc:"nc",rep:"informes"}[k];const rec=p[L].find(x=>x.id===id);if(!rec||!puedeBorrar(rec))break;
+      p[L]=p[L].filter(x=>x!==rec);if(rec.archivo)ARCH.del(rec.archivo.id);
+      if(k==="nc"&&rec.insp)delete rec.insp;
+      log(`Registro borrado: ${rec.id} ${rec.nombre||rec.titulo||rec.material||(rec.tipo&&REPS[rec.tipo])||elLabel&&k==="insp"&&elLabel(rec)||""}.`);save();
+      U.sheet=null;const back={doc:"documentos",cert:"materiales",insp:"inspecciones",nc:"nc",rep:"informes"}[k];toast(`${rec.id} borrado.`);go(back);break;}
     case"fillLogin":$("lgUser").value=el.dataset.u;$("lgPass").value=el.dataset.p;$("lgPass").focus();break;
     case"logout":logout();U.view="inicio";U.sheet=null;render();break;
     case"nav":go(v);break;
@@ -171,15 +178,18 @@ document.addEventListener("click",async ev=>{
     case"openCert":openSheet("cert",id);break;
     case"openNC":openSheet("nc",id);break;
     case"tabEns":U.tabEns=v;render();break;
+    case"quitarFP":delete p.fotoPrincipal;save();render();break;
+    case"pdfLista":{const h=pdfListaHTML(v);if(h)exportPDF(h,fname(v==="proyectos"?(EMP()||{}).razon:p.nombre,v,TODAY));break;}
     case"pdfEns":exportPDF(pdfEnsHTML(p),fname(p.nombre,"ensayos",TODAY));break;
     case"tabInsp":U.tabInsp=v;render();break;
     case"sampleDoc":{const k=el.dataset.k;let key=k==="cert"?"cert":"licencia";if(k==="doc"){const t=$("up-doc-tipo")?.value;key=t==="suelos"?"suelos":"licencia";}handleUpload(k,null,key);break;}
     case"revDoc":await reviewDoc(id);break;
-    case"saveDoc":{const d=p.documentos.find(x=>x.id===id);d.nombre=$("docNom").value;d.tipo=$("docTipo").value;d.version=$("docVer").value;d.fecha=$("docFecha").value;d.vence=$("docVence").value;
+    case"saveDoc":{const d=p.documentos.find(x=>x.id===id);d.nombre=$("docNom").value;{const nt=$("docTipo").value;if(nt!==d.tipo&&(d.rev||[]).length&&(d.rev[0].t!==(REV[nt]?.items[0]||[])[0])){d.rev=[];d.revVia="";}d.tipo=nt;}d.version=$("docVer").value;d.fecha=$("docFecha").value;d.vence=$("docVence").value;
       document.querySelectorAll("[data-dato]").forEach(x=>{d.datos[x.dataset.dato]=x.value;});Object.keys(d.datos).forEach(k=>{if(!d.datos[k])delete d.datos[k];});save();render();toast("Documento guardado.");break;}
     case"licToProj":{const d=p.documentos.find(x=>x.id===id);const g=k=>d.datos[k]||"";
       Object.assign(p,{licencia:g("Número")||p.licencia,curaduria:g("Curaduría")||p.curaduria,area:g("Área construida")||p.area,unidades:g("Unidades")||p.unidades,propietario:g("Titular")||p.propietario,direccion:g("Dirección")||p.direccion});save();render();toast("Datos del proyecto actualizados con la licencia.");break;}
     case"verArch":case"bajarArch":{const rec=(el.dataset.k==="doc"?p.documentos:p.certificados).find(x=>x.id===id);if(rec&&rec.archivo)abrirArchivo(rec.archivo,act==="bajarArch");break;}
+    case"revManual":{const d=p.documentos.find(x=>x.id===id);if(!d||!REV[d.tipo])break;d.rev=REV[d.tipo].items.map(t=>({t:t[0],est:"",pag:"",obs:""}));d.revVia="manual";save();renderSheet();break;}
     case"pdfDoc":{const d=p.documentos.find(x=>x.id===id);exportPDF(pdfDocHTML(d),fname(p.nombre,"documento",d.nombre));break;}
     case"flujo":{const k=el.dataset.k;let rec;
       if(k==="doc")rec=p.documentos.find(x=>x.id===id);else if(k==="cert")rec=p.certificados.find(x=>x.id===id);
@@ -187,8 +197,8 @@ document.addEventListener("click",async ev=>{
       else if(k==="rep"){rec=p.informes.find(x=>x.id===id);readRepForm(rec);if(rec&&rec.tipo!=="semanal"&&!rec.concl)rec.concl=defaultConcl(rec,repData(rec));}
       if(!rec)break;rec.flujo=v;delete rec._ai;delete rec.aiNote;
       const nm=rec.nombre||rec.titulo||rec.material||(rec.tipo&&REPS[rec.tipo])||"";
-      log(`${v==="aprobado"?(k==="nc"?"Emitida al constructor":"Aprobado y publicado"):v==="devuelto"?"Devuelto con observaciones":"Enviado a revisión"}: ${rec.id} ${nm}.`);
-      save();render();toast(v==="aprobado"?(k==="nc"?"No conformidad emitida. El constructor ya la puede ver y responder.":"Aprobado. El constructor ya lo puede ver."):v==="revision"?"Enviado al director para revisión.":"Devuelto al residente.");break;}
+      log(`${v==="aprobado"?(k==="nc"?"Emitida al constructor":"Aprobado y publicado"):v==="devuelto"?"Devuelto con observaciones":v==="borrador"?"Reabierto por el director":"Enviado a revisión"}: ${rec.id} ${nm}.`);
+      save();render();toast(v==="aprobado"?(k==="nc"?"No conformidad emitida. El constructor ya la puede ver y responder.":"Aprobado. El constructor ya lo puede ver."):v==="revision"?"Enviado al director para revisión.":v==="borrador"?"Reabierto: ya se puede corregir. Vuelve a aprobarlo cuando termines.":"Devuelto al residente.");break;}
     case"saveCert":{const c=p.certificados.find(x=>x.id===id);Object.assign(c,{material:$("cMat").value,proveedor:$("cProv").value,lote:$("cLote").value,norma:$("cNorma").value,cantidad:$("cCant").value,fecha:$("cFecha").value,resultado:$("cRes").value});save();render();toast("Certificado guardado.");break;}
     case"pdfCert":{const c=p.certificados.find(x=>x.id===id);exportPDF(hdrHTML("Control de certificado de calidad",c.id)+`<h2>Certificado ${c.id}</h2><table><colgroup><col style="width:28%"><col></colgroup><tbody><tr><th>Material</th><td>${esc(c.material)}</td></tr><tr><th>Proveedor</th><td>${esc(c.proveedor)}</td></tr><tr><th>Lote o colada</th><td>${esc(c.lote)}</td></tr><tr><th>Norma</th><td>${esc(c.norma)}</td></tr><tr><th>Fecha</th><td>${fd(c.fecha)}</td></tr><tr><th>Cantidad</th><td>${esc(c.cantidad)}</td></tr><tr><th>Resultado</th><td class="${c.resultado==="Cumple"?"st-ok":"st-nc"}">${esc(c.resultado||"—")}</td></tr><tr><th>Revisión de la supervisión</th><td>${FLUJO[c.flujo||"borrador"][0]}</td></tr><tr><th>Archivo adjunto</th><td>${c.archivo?esc(c.archivo.nombre):"Sin archivo"}</td></tr></tbody></table>`+firmasHTML(),fname(p.nombre,"certificado",c.id));break;}
     case"ncFromEns":{const r=resumenEns(p).rows.find(x=>x.app===el.dataset.k&&x.cod===id);if(!r)break;newNC({ensayo:r.app+":"+r.cod,origen:`Ensayo de ${r.tl.toLowerCase()}, muestra ${r.cod}`,ubic:r.loc||r.elemento,nota:`Muestra ${r.cod} de ${r.tl.toLowerCase()}: ${r.base!=null?f1(r.base)+" MPa":"sin resultado a 28 días"} para ${f1(r.fc)} MPa especificados (${(EST_ENS[r.est]||[r.est])[0].toLowerCase()})`});break;}
@@ -226,7 +236,7 @@ document.addEventListener("click",async ev=>{
     case"pdfNC":{const n=p.nc.find(x=>x.id===id);exportPDF(pdfNCHTML(n),fname(p.nombre,"no-conformidad",n.id));break;}
     /* Informes */
     case"genRep":{const tipo=$("nrTipo").value,desde=$("nrDesde").value,hasta=$("nrHasta").value;if(!desde||!hasta||desde>hasta){toast("Revisa las fechas de cobertura.");break;}
-      const rep={id:nextId(p.informes.filter(r=>r.tipo===tipo),REPP[tipo]),tipo,desde,hasta,creado:TODAY,flujo:"borrador",txtInsp:"",aspectos:"",txtDoc:"",txtCert:"",txtEns:"",concl:"",fotos:[],avance:tipo==="final"?[]:avanceInicial(p)};
+      const rep={id:nextId(p.informes.filter(r=>r.tipo===tipo),REPP[tipo],3),tipo,desde,hasta,creado:TODAY,flujo:"borrador",txtInsp:"",aspectos:"",txtDoc:"",txtCert:"",txtEns:"",concl:"",fotos:[],avance:tipo==="final"?[]:avanceInicial(p)};
       if(tipo!=="semanal")rep.concl=defaultConcl(rep,repData(rep));
       if(tipo==="semanal")rep.aspectos=sugerirAspectos(rep);
       p.informes.push(rep);log(`Informe ${rep.id} generado: ${REPS[tipo]}.`);save();go("informe",rep.id);break;}
@@ -291,6 +301,7 @@ document.addEventListener("change",async ev=>{
     try{const old=rec.archivo;rec.archivo=await guardarArchivo(f);if(old)ARCH.del(old.id);log(`Archivo adjuntado a ${rec.id}: ${f.name}.`);save();renderSheet();toast("Archivo adjuntado.");}catch(e){toast("No se pudo guardar el archivo en este navegador.");}}
   else if(t.dataset.photo){const files=[...(t.files||[])];t.value="";if(!files.length)return;const ids=await addPhotos(files);
     if(t.dataset.photo==="reg"){if(ids.length)openSheet("fotoUp",null,{ids});return;}
+    if(t.dataset.photo==="principal"){if(ids.length){p.fotoPrincipal=ids[0];p.fotos=p.fotos||[];p.fotos.push({id:ids[0],fecha:TODAY,desc:"Foto principal del proyecto",torre:"General"});log("Foto principal del proyecto actualizada.");save();render();toast("Foto principal actualizada.");}return;}
     const arr=photoTarget(t.dataset.photo);if(arr)arr.push(...ids);save();render();if(ids.length)toast(`${ids.length} foto(s) agregada(s).`);}
   else if(t.id==="projSel"){if(t.value==="__new"){t.value=SES.pid||"";openSheet("newProj",null,{sis:["porticos"]});}else if(t.value==="__none"){abrirProyecto(null);}else abrirProyecto(t.value);}
   else if(t.dataset.fi){U.fi[t.dataset.fi]=t.value;render();}
@@ -302,7 +313,9 @@ document.addEventListener("change",async ev=>{
   else if(t.id==="repDesde"||t.id==="repHasta"){const rep=p.informes.find(r=>r.id===U.sel);readRepForm(rep);save();render();}
   else if(t.dataset.rep||t.dataset.av){const rep=p.informes.find(r=>r.id===U.sel);if(t.dataset.av){const a=rep.avance[+t.dataset.av];a[t.dataset.k]=t.dataset.k==="act"?t.value:Math.max(0,Math.min(100,+t.value||0));syncAvance(p,rep);save();render();}else{readRepForm(rep);save();refreshPrev();}}
   else if(t.dataset.phcap){p.fotoDesc=p.fotoDesc||{};const s=(p.fotos||[]).find(f=>f.id===t.dataset.phcap);if(s)s.desc=t.value;else p.fotoDesc[t.dataset.phcap]=t.value;save();}
-  else if(t.dataset.rev){const d=p.documentos.find(x=>x.id===t.dataset.rev);d.rev[+t.dataset.i].est=t.value;save();render();}
+  else if(t.dataset.rev){const d=p.documentos.find(x=>x.id===t.dataset.rev);d.rev[+t.dataset.i].est=t.value;save();renderSheet();}
+  else if(t.dataset.fp!==undefined&&t.tagName==="SELECT"){if(t.value){p.fotoPrincipal=t.value;save();render();toast("Foto principal actualizada.");}}
+  else if(t.dataset.revpag||t.dataset.revobs){const d=p.documentos.find(x=>x.id===(t.dataset.revpag||t.dataset.revobs));const it=d.rev[+t.dataset.i];if(t.dataset.revpag)it.pag=t.value.trim();else it.obs=t.value.trim();save();}
   else if(t.dataset.fix){const i=p.inspecciones.find(x=>x.id===U.sel);const r=i.resp[t.dataset.fix];if(t.checked)r.fix=TODAY;else delete r.fix;save();render();}
   else if(t.dataset.sys==="proj"){p.sistemas=[...document.querySelectorAll('[data-sys="proj"]:checked')].map(x=>x.value);save();render();}
   else if(t.dataset.sys==="new"){U.sheet.sis=[...document.querySelectorAll('[data-sys="new"]:checked')].map(x=>x.value);$("npEffect").innerHTML=sysEffect(U.sheet.sis);}

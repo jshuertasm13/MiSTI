@@ -2,9 +2,14 @@
 const FLUJO={borrador:["Borrador",""],revision:["En revisión","c-dark"],aprobado:["Aprobado","c-good"],devuelto:["Devuelto","c-warn"]};
 const flujoChip=(f,apLabel)=>{const x=FLUJO[f||"borrador"];return `<span class="chip ${x[1]}">${f==="aprobado"&&apLabel?apLabel:x[0]}</span>`;};
 function log(t){const p=P();p.actividad.unshift({f:TODAY,q:who().replace(/^Ing\.\s*/,""),t});p.actividad=p.actividad.slice(0,50);}
+/* Borrar: el residente borra lo que no está aprobado; el director, cualquier registro. Pide confirmación con un segundo clic. */
+const puedeBorrar=rec=>canEdit()&&((rec.flujo||"borrador")!=="aprobado"||canApprove());
+function delBtn(kind,rec,small){if(!rec||!rec.id||!puedeBorrar(rec))return"";const arm=U.delArm===kind+":"+rec.id;
+  return `<button class="btn ${small?"small ":""}${arm?"danger":"ghostdanger"}" data-act="delRec" data-k="${kind}" data-id="${rec.id}">${arm?"¿Borrar? Clic para confirmar":"Borrar"}</button>`;}
 function flujoBtns(rec,kind,apLabel){
   if(isCons())return"";const f=rec.flujo||"borrador";let h="";const ap=apLabel||"Aprobar y publicar";
   if((f==="borrador"||f==="devuelto")&&!canApprove())h+=`<button class="btn dark" data-act="flujo" data-k="${kind}" data-id="${rec.id}" data-v="revision">Enviar a revisión</button>`;
+  if(canApprove()&&f==="aprobado")h+=`<button class="btn" data-act="flujo" data-k="${kind}" data-id="${rec.id}" data-v="borrador" title="Vuelve a borrador para corregirlo">Reabrir</button>`;
   if(canApprove()&&f!=="aprobado")h+=`${f==="revision"?`<button class="btn" data-act="flujo" data-k="${kind}" data-id="${rec.id}" data-v="devuelto">Devolver</button>`:""}<button class="btn primary" data-act="flujo" data-k="${kind}" data-id="${rec.id}" data-v="aprobado">${ap}</button>`;
   return h;
 }
@@ -62,7 +67,7 @@ function vLogin(){
   return `<div class="login"><section class="hero"><div class="mark"><span class="logo">${IC.logo}</span><div><h1>Mi STI</h1><div style="color:var(--rail-dim);font-size:13px;margin-top:4px">Supervisión técnica independiente · NSR-10 Título I</div></div></div>
     <div style="display:flex;flex-direction:column;gap:18px"><p>Control documental y control de calidad de la obra en un solo lugar: licencias y diseños, materiales, ensayos, inspecciones, no conformidades, informes y registro fotográfico.</p>
     <ul><li>Cada firma con sus proyectos, usuarios y colores</li><li>El constructor consulta y responde las no conformidades</li><li>Informes y registros exportables a PDF</li></ul></div>
-    <small style="color:var(--rail-dim)">Mi STI v2.0 (19 nov 2026) · los datos se guardan en este navegador.</small></section>
+    <small style="color:var(--rail-dim)">Mi STI v2.1 (19 nov 2026) · los datos se guardan en este navegador.</small></section>
   <section class="box"><div><div class="eyebrow">Acceso</div><h2 style="font-size:24px;margin-top:4px">Ingresa a tu cuenta</h2></div>
     <form id="loginForm" autocomplete="on"><label class="fl">Usuario<input type="text" id="lgUser" autocomplete="username" required autofocus></label>
     <label class="fl">Contraseña<input type="password" id="lgPass" autocomplete="current-password" required></label>
@@ -107,8 +112,28 @@ function render(){
   renderFrame();
   const fn={inicio:vInicio,tablero:vTablero,documentos:vDocumentos,materiales:vMateriales,ensayos:vEnsayos,inspecciones:vInspecciones,inspeccion:vInspeccion,nc:vNC,informes:vInformes,informe:vInforme,fotos:vFotos,proyecto:vProyecto,
     plataforma:vPlataforma,empresa:vEmpresa,usuarios:vUsuarios,proyectos:vProyectos,cuenta:vCuenta}[U.view]||vInicio;
-  $("view").innerHTML=fn();if(U.view==="ensayos")montarEnsHost();renderSheet();
+  $("view").innerHTML=fn();if(U.view==="ensayos")montarEnsHost();
+  if(PDF_LISTAS[U.view]&&(U.view==="proyectos"||P())){const ph=$("view").querySelector(".phead");if(ph){let ac=ph.querySelector(":scope>.actions");if(!ac){ac=document.createElement("div");ac.className="actions";ph.appendChild(ac);}
+    ac.insertAdjacentHTML("afterbegin",`<button class="btn" data-act="pdfLista" data-v="${U.view}">${IC.pdf} Exportar PDF</button>`);}}
+  renderSheet();
 }
+/* PDF de las pestañas que son listas (cada registro tiene además su propio PDF) */
+const PDF_LISTAS={documentos:1,materiales:1,nc:1,informes:1,proyecto:1,proyectos:1};
+function pdfListaHTML(v){const p=P();const T=(cols,rows,w)=>`<table>${w?`<colgroup>${w.map(x=>x?`<col style="width:${x}%">`:"<col>").join("")}</colgroup>`:""}<thead><tr>${cols.map(c=>`<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.join(""):`<tr><td colspan="${cols.length}">Sin registros.</td></tr>`}</tbody></table>`;
+  const est=r=>FLUJO[r.flujo||"borrador"][0];
+  if(v==="documentos"){const docs=p.documentos.filter(visible);return hdrHTML("Control documental",`${docs.length} documento(s)`)+["Licencias y permisos","Diseños y estudios","Contratos y otros"].map(c=>{const l=docs.filter(d=>(d.cat||DOC_CAT[d.tipo])===c);if(!l.length)return"";
+    return `<h2>${c}</h2>`+T(["Documento","Versión","Fecha","Vence","Contenido mínimo","Adjunto","Estado"],l.map(d=>{const rv=d.rev||[];return `<tr><td>${esc(d.nombre)}<br><small>${esc(DOC_TIPOS[d.tipo]||"")}</small></td><td>v${esc(d.version)}</td><td>${fd(d.fecha)}</td><td>${d.vence?fd(d.vence):"—"}</td><td>${rv.length?`${rv.filter(i=>i.est==="ok").length}/${rv.length} completos`:REV[d.tipo]?"Sin revisar":"—"}</td><td>${d.archivo?"Sí":"No"}</td><td>${est(d)}</td></tr>`;}),[30,8,12,12,14,8,0]);}).join("")+firmasHTML();}
+  if(v==="materiales"){const l=p.certificados.filter(visible).slice().sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));return hdrHTML("Control de certificados de materiales",`${l.length} certificado(s)`)+"<h2>Certificados de calidad</h2>"+T(["No.","Material","Proveedor · lote","Norma","Fecha","Cantidad","Resultado","Estado"],l.map(c=>`<tr><td>${c.id}</td><td>${esc(c.material)}</td><td>${esc(c.proveedor)}<br><small>${esc(c.lote)}</small></td><td>${esc(c.norma)}</td><td>${fd(c.fecha)}</td><td>${esc(c.cantidad)}</td><td class="${c.resultado==="Cumple"?"st-ok":c.resultado?"st-nc":""}">${esc(c.resultado||"—")}</td><td>${est(c)}</td></tr>`),[8,20,18,10,11,11,10,12])+firmasHTML();}
+  if(v==="nc"){const l=p.nc.filter(visible).slice().sort((a,b)=>a.fecha.localeCompare(b.fecha));return hdrHTML("Control de no conformidades",`${l.length} no conformidad(es)`)+"<h2>No conformidades</h2>"+T(["No.","Fecha","No conformidad","Ubicación","Límite","Estado"],l.map(n=>`<tr><td>${n.id}</td><td>${fd(n.fecha)}</td><td>${esc(n.titulo)}<br><small>${esc(n.numeral||"")}${n.origen?" · "+esc(n.origen):""}</small></td><td>${esc(n.ubic||"")}</td><td>${n.limite?fd(n.limite):"—"}</td><td class="${n.estado==="cerrada"?"st-ok":ncVencida(n)?"st-nc":""}">${NCE[n.estado][0]}${ncVencida(n)?" · vencida":""}${n.flujo!=="aprobado"?" · borrador":""}</td></tr>`),[8,12,0,22,12,15])+firmasHTML();}
+  if(v==="informes"){const l=p.informes.filter(visible).slice().sort((a,b)=>a.tipo.localeCompare(b.tipo)||a.id.localeCompare(b.id));return hdrHTML("Control de informes",`${l.length} informe(s)`)+"<h2>Informes generados</h2>"+T(["No.","Tipo","Cobertura","Generado","Estado"],l.map(r=>`<tr><td>${r.id}</td><td>${REPS[r.tipo]}</td><td>${fd(r.desde)} – ${fd(r.hasta)}</td><td>${fd(r.creado)}</td><td>${est(r)}</td></tr>`),[12,24,0,14,14])+firmasHTML();}
+  if(v==="proyecto"){const kv=[["Nombre",p.nombre],["Dirección",p.direccion],["Municipio",p.municipio],["Propietario",p.propietario],["Constructora",p.constructora],["Director de obra",p.directorObra],["Licencia",p.licencia],["Curaduría",p.curaduria],["Área construida",p.area],["Unidades",p.unidades],["Contrato de STI",p.contrato],["Inicio de la supervisión",fd(p.inicio)],["Torres o bloques",(p.torres||[]).join(", ")],["Sistema estructural",sisTxt(p)]];
+    const fp=p.fotoPrincipal&&PH.get(p.fotoPrincipal);const eq=(p.miembros||[]).map(m=>({m,u:userById(m.uid)})).filter(x=>x.u&&x.u.rol!=="owner");
+    return hdrHTML("Ficha del proyecto",esc(p.nombre))+(fp?`<figure class="fotoprin"><img src="${fp}" alt=""></figure>`:"")+"<h2>Datos del proyecto</h2>"+T(["Dato","Valor"],kv.map(([k,x])=>`<tr><th>${k}</th><td>${esc(x||"—")}</td></tr>`),[32,0])
+      +"<h2>Equipo del proyecto</h2>"+T(["Nombre","Rol","Cargo","Matrícula"],eq.map(({m,u})=>`<tr><td>${esc(u.nombre)}</td><td>${esc(ROL_P[m.rol]||m.rol)}</td><td>${esc(u.cargo||"")}${u.constructora?" · "+esc(u.constructora):""}</td><td>${esc(u.matricula||"")}</td></tr>`),[30,16,0,22])
+      +"<h2>Elementos que se inspeccionan</h2>"+T(["Elemento","Ítems de la lista de chequeo"],tiposDe(p).map(t=>`<tr><td>${CHK[t].label}</td><td>${chkItems(t).length}</td></tr>`),[50,0])+firmasHTML();}
+  if(v==="proyectos"){const me=ME();const l=D.proyectos.filter(x=>x.empresaId===me.empresaId);const n=(x,r)=>miembrosRol(x,r).map(u=>esc(u.nombre)).join(", ")||"—";
+    return `<div class="hdr"><div><b>${esc((EMP()||{}).razon||"")}</b><h1 style="font-size:15px;margin:4px 0">PROYECTOS DE LA EMPRESA</h1><span>${fd(TODAY)}</span></div></div><h2>Proyectos</h2>`+T(["Proyecto","Sistema estructural","Directores","Residentes","Constructores","Inicio"],l.map(x=>`<tr><td>${esc(x.nombre)}<br><small>${esc(x.municipio||"")}</small></td><td>${esc(sisTxt(x))}</td><td>${n(x,"director")}</td><td>${n(x,"residente")}</td><td>${n(x,"constructor")}</td><td>${fd(x.inicio)}</td></tr>`),[24,20,0,0,0,11]);}
+  return "";}
 function go(view,sel){U.view=view;U.sel=sel||null;U.confirm=false;U.selFotos=[];try{history.replaceState(null,"","#"+view);}catch(e){}render();window.scrollTo({top:0});}
 function abrirProyecto(id){SES.pid=id||null;saveSes();U.selFotos=[];refreshAi();go(id?"tablero":"inicio");}
 
@@ -193,20 +218,43 @@ function vEnsayos(){
   return `<div class="phead"><div><div class="eyebrow">Control de calidad</div><h1>Ensayos</h1><p>Resultados de laboratorio evaluados con los criterios de aceptación de la NSR-10. El resumen se actualiza con cada muestra; el acta mensual lo toma de aquí.</p></div>
   <div class="actions"><button class="btn" data-act="pdfEns">${IC.pdf} Exportar PDF</button></div></div>
   <div id="ensTop">${ensTopHTML(p)}</div>
-  ${canEdit()?`<div id="ensHost" class="enshost"></div>`:ensSoloLectura(p,U.tabEns)}`;
+  <div id="ensHost" class="enshost"></div>`;
 }
 /* Monta (o recupera) el módulo de ensayos de la pestaña activa sin perder su estado entre renderizados */
 function montarEnsHost(){
-  const slot=$("ensHost");if(!slot)return;const p=P();const t=ENS_TIPOS.find(x=>x[0]===U.tabEns);if(!t)return;const app=t[1];const key=p.id+":"+app;
+  const slot=$("ensHost");if(!slot)return;const p=P();const t=ENS_TIPOS.find(x=>x[0]===U.tabEns);if(!t)return;const app=t[1];const ro=!canEdit();const key=p.id+":"+app+(ro?":ro":"");
   if(U.ensMod&&U.ensMod.key===key){slot.replaceWith(U.ensMod.host);}
   else{if(U.ensMod)U.ensMod.api.destroy();const host=document.createElement("div");host.id="ensHost";host.className="enshost";slot.replaceWith(host);
-    const api=montarEnsayo(host,app,ctxEns(p,app==="mamposteria"?U.tabEns:null,()=>{const el=$("ensTop");if(el&&U.view==="ensayos"&&P())el.innerHTML=ensTopHTML(P());}));
+    const ctx=ctxEns(p,app==="mamposteria"?U.tabEns:null,()=>{const el=$("ensTop");if(el&&U.view==="ensayos"&&P())el.innerHTML=ensTopHTML(P());});ctx.soloLectura=ro;
+    const api=montarEnsayo(host,app,ctx);
     U.ensMod={key,host,api,tab:U.tabEns};}
   if(app==="mamposteria"&&U.ensMod.tab!==U.tabEns&&U.ensMod.api.setTab){U.ensMod.api.setTab(U.tabEns);U.ensMod.tab=U.tabEns;}
 }
+/* Gráficas de control para PDF: % de la resistencia especificada por muestra, en orden de fecha */
+function ensChartSVG(rows,titulo,lim,unidad){
+  const W=720,H=250,L=46,R=12,T=34,B=34;const n=rows.length;if(!n)return"";
+  const vals=rows.map(r=>r.ratio*100);const ymin=Math.min(60,Math.floor((Math.min(...vals)-5)/10)*10),ymax=Math.max(130,Math.ceil((Math.max(...vals)+5)/10)*10);
+  const X=i=>L+(n===1?(W-L-R)/2:i*(W-L-R)/(n-1)),Y=v=>T+(ymax-v)*(H-T-B)/(ymax-ymin);
+  const col={cumple:"#1d7a3e",aceptable:"#c99a00",prombajo:"#d4691e",nocumple:"#b3261e",aprobada:"#2c5f8a"};
+  let g="";for(let v=ymin;v<=ymax;v+=10)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e4e4de"/><text x="${L-6}" y="${Y(v)+4}" font-size="10" text-anchor="end" fill="#666">${v}%</text>`;
+  const avg=rows.map((r,i)=>i>=2?(vals[i]+vals[i-1]+vals[i-2])/3:null);
+  const pa=avg.map((v,i)=>v==null?"":`${X(i)},${Y(v)}`).filter(Boolean).join(" ");
+  return `<svg class="pdfchart" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Arial,sans-serif">
+  <rect width="${W}" height="${H}" fill="#fff"/><text x="${L}" y="18" font-size="13" font-weight="bold" fill="#111">${esc(titulo)}</text><text x="${W-R}" y="18" font-size="10" text-anchor="end" fill="#666">${n} resultado(s) · ${esc(unidad||"% de la resistencia especificada")}</text>${g}
+  <line x1="${L}" x2="${W-R}" y1="${Y(100)}" y2="${Y(100)}" stroke="#1d7a3e" stroke-width="2"/><text x="${W-R}" y="${Y(100)-4}" font-size="10" text-anchor="end" fill="#1d7a3e">100 %</text>
+  ${lim?`<line x1="${L}" x2="${W-R}" y1="${Y(lim)}" y2="${Y(lim)}" stroke="#b3261e" stroke-width="1.5" stroke-dasharray="6 4"/><text x="${W-R}" y="${Y(lim)+12}" font-size="10" text-anchor="end" fill="#b3261e">Límite individual ${Math.round(lim)} %</text>`:""}
+  ${pa?`<polyline points="${pa}" fill="none" stroke="#777" stroke-width="1.5" stroke-dasharray="4 3"/>`:""}
+  <polyline points="${vals.map((v,i)=>`${X(i)},${Y(v)}`).join(" ")}" fill="none" stroke="#2c3e50" stroke-width="1.5"/>
+  ${rows.map((r,i)=>`<circle cx="${X(i)}" cy="${Y(vals[i])}" r="4.5" fill="${col[r.est]||"#555"}"/><text x="${X(i)}" y="${Y(vals[i])-8}" font-size="9" text-anchor="middle" fill="#333">${Math.round(vals[i])}</text><text x="${X(i)}" y="${H-B+14}" font-size="9" text-anchor="middle" fill="#666">${esc(String(r.cod).slice(0,7))}</text>`).join("")}
+  ${pa?`<text x="${L+4}" y="${H-6}" font-size="9" fill="#777">- - Promedio móvil de 3 resultados</text>`:""}</svg>`;}
+function ensChartsHTML(p,rows){const out=[];
+  for(const[k,,l]of ensTiposDe(p)){const r=rows.filter(x=>x.tipo===k&&x.base!=null&&x.ratio!=null).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));if(!r.length)continue;
+    if(k==="unidad"){out.push(ensChartSVG(r,l+" · compresión","", "% de la resistencia de la clase"));continue;}
+    for(const fc of[...new Set(r.map(x=>+x.fc))].sort((a,b)=>a-b)){const g=r.filter(x=>+x.fc===fc);const lim=k==="murete"?0:(fc<=35?(fc-3.5)/fc*100:90);out.push(ensChartSVG(g,`${l} · ${f1(fc)} MPa`,lim));}}
+  return out.length?`<div class="charts">${out.map(s=>`<figure class="chart">${s}</figure>`).join("")}</div>`:"";}
 function pdfEnsHTML(p){const R=resumenEns(p);const tipos=ensTiposDe(p).filter(t=>R.rows.some(r=>r.tipo===t[0]));
   const sum=`<table><colgroup><col style="width:20%"></colgroup><thead><tr><th>Material</th>${Object.values(EST_ENS).map(x=>`<th>${x[0]}</th>`).join("")}<th>Total</th></tr></thead><tbody>${tipos.map(([k,,l])=>{const r=R.rows.filter(x=>x.tipo===k);return `<tr><td><b>${esc(l)}</b></td>${Object.keys(EST_ENS).map(e=>`<td>${r.filter(x=>x.est===e).length||"·"}</td>`).join("")}<td><b>${r.length}</b></td></tr>`;}).join("")}</tbody></table>`;
-  return hdrHTML("Control de ensayos de laboratorio",R.act?`Actualizado el ${fd(R.act)}`:"")+`<h2>Resumen</h2>${R.rows.length?sum:"<p>Sin ensayos.</p>"}`+tipos.map(([k,,l])=>{const rows=R.rows.filter(x=>x.tipo===k).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
+  return hdrHTML("Control de ensayos de laboratorio",R.act?`Actualizado el ${fd(R.act)}`:"")+`<h2>Resumen</h2>${R.rows.length?sum:"<p>Sin ensayos.</p>"}`+(R.rows.length?`<h2>Gráficas de control</h2>${ensChartsHTML(p,R.rows)}`:"")+tipos.map(([k,,l])=>{const rows=R.rows.filter(x=>x.tipo===k).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
     return `<h2>${esc(l)} · ${rows.length} muestra(s)</h2><table><colgroup><col style="width:9%"><col><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:7%"><col style="width:16%"></colgroup><thead><tr><th>Muestra</th><th>Ubicación</th><th>Muestreo</th><th>Especificada</th><th>Resultado</th><th>%</th><th>Estado</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.cod)}</td><td>${esc(r.loc||r.elemento||"")}</td><td>${fd(r.fecha)}</td><td>${r.fc?f1(r.fc)+" MPa":"—"}</td><td class="${r.est==="nocumple"?"st-nc":""}">${r.base!=null?f1(r.base)+" MPa":"—"}</td><td>${r.ratio!=null?Math.round(r.ratio*100)+" %":"—"}</td><td class="${["cumple","aprobada"].includes(r.est)?"st-ok":ENS_MALOS.includes(r.est)?"st-nc":""}">${esc((EST_ENS[r.est]||[r.est])[0])}</td></tr>`).join("")}</tbody></table>`;}).join("")
     +`<p style="font-size:10.5px;color:#555;margin-top:10px">Criterio NSR-10 C.5.6.3.3 para concreto: cada promedio de 3 ensayos consecutivos de la misma clase ≥ f'c y ningún ensayo menor que f'c − 3,5 MPa (f'c ≤ 35 MPa). Mampostería según NSR-10 Título D.</p>`+firmasHTML();}
 
@@ -237,25 +285,31 @@ function sheetDoc(d){
   ${ed?`<div class="form">${keys.map(k=>`<label class="${k==="Resumen"||k==="Título"?"full":""}">${esc(k)}${k==="Resumen"?`<textarea data-dato="${esc(k)}">${esc(d.datos?.[k]||"")}</textarea>`:`<input type="text" data-dato="${esc(k)}" value="${esc(d.datos?.[k]||"")}">`}</label>`).join("")}</div>`
      :Object.keys(d.datos||{}).filter(k=>d.datos[k]).length?`<dl class="kv">${Object.entries(d.datos).filter(([k,v])=>v).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`:'<p class="muted">Sin datos.</p>'}</section>
   ${d.tipo==="licencia"&&canEdit()?`<div class="note y">Puedes llevar estos datos a la ficha del proyecto. <button class="btn small" data-act="licToProj" data-id="${d.id}">Actualizar el proyecto</button></div>`:""}
-  ${REV[d.tipo]?`<section><header style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap"><h3>Contenido mínimo · ${REV[d.tipo].label}</h3>${canEdit()&&d._text?`<button class="btn small ai" data-act="revDoc" data-id="${d.id}">${IC.spark} ${aiReady()?"Revisar con IA":"Revisar de nuevo"}</button>`:""}</header>
-    ${busyBox("rev","Revisando el contenido…")}${d.revVia==="auto"?'<div class="note y" style="margin-bottom:8px">Revisión automática por palabras clave. Confirma cada ítem; con la IA activa la revisión es más precisa.</div>':d.revVia==="ia"?'<div class="note ok" style="margin-bottom:8px">Revisado por la IA. Confirma cada ítem.</div>':""}
-    ${rv.length?`<div class="revlist">${rv.map((it,i)=>`<div class="revitem"><span>${esc(it.t)}${it.pag?` <span class="tag">pág. ${esc(it.pag)}</span>`:""}</span>
-      ${canEdit()?`<select data-rev="${d.id}" data-i="${i}" aria-label="Estado del ítem"><option value="ok" ${it.est==="ok"?"selected":""}>Encontrado</option><option value="inc" ${it.est==="inc"?"selected":""}>Incompleto</option><option value="aus" ${it.est==="aus"?"selected":""}>Ausente</option></select>`:`<span class="chip ${it.est==="ok"?"c-good":it.est==="inc"?"c-warn":"c-crit"}">${it.est==="ok"?"Encontrado":it.est==="inc"?"Incompleto":"Ausente"}</span>`}
-      ${it.obs?`<span class="o">${esc(it.obs)}</span>`:""}</div>`).join("")}</div>`:'<p class="muted">Aún no se ha revisado.</p>'}</section>`:""}
+  ${REV[d.tipo]?(()=>{const G=REV_GUIA[d.tipo]||{items:[]};const edR=canEdit()&&d.flujo!=="aprobado";const hechos=rv.filter(it=>it.est).length;
+    const EST=[["","Sin revisar"],["ok","Encontrado"],["inc","Incompleto"],["aus","Ausente"]];
+    return `<section><header style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap"><h3>Contenido mínimo · ${REV[d.tipo].label}</h3>
+    <div class="actions">${edR&&rv.length?`<button class="btn small" data-act="revManual" data-id="${d.id}" title="Vuelve a empezar la lista con todos los ítems sin revisar">Reiniciar lista</button>`:""}${edR&&d._text&&!d._scan?`<button class="btn small ai" data-act="revDoc" data-id="${d.id}">${IC.spark} ${aiReady()?"Revisar con IA":"Revisión automática"}</button>`:""}</div></header>
+    ${busyBox("rev","Revisando el contenido…")}
+    ${rv.length?`<div class="note ${d.revVia==="manual"?"":"y"}" style="margin-bottom:8px">${d.revVia==="auto"?"Revisión automática por palabras clave: confirma cada ítem en el documento.":d.revVia==="ia"?"Revisado por la IA: confirma cada ítem en el documento.":"Revisión manual."} ${hechos} de ${rv.length} ítems revisados. Referencia: ${esc(G.ref||"NSR-10")}.</div>
+      <div class="revlist">${rv.map((it,i)=>`<div class="revitem ${it.est?"r-"+it.est:""}"><div class="rt"><span class="nn">${i+1}</span><div><b>${esc(it.t)}</b>${G.items[i]?`<span class="sub">Debe incluir: ${esc(G.items[i])}</span>`:""}</div></div>
+        ${edR?`<div class="rf"><select data-rev="${d.id}" data-i="${i}" aria-label="Resultado del ítem">${EST.map(([v,l])=>`<option value="${v}" ${(it.est||"")===v?"selected":""}>${l}</option>`).join("")}</select><input type="text" data-revpag="${d.id}" data-i="${i}" value="${esc(it.pag||"")}" placeholder="Pág." aria-label="Página"><input type="text" class="obs" data-revobs="${d.id}" data-i="${i}" value="${esc(it.obs||"")}" placeholder="Observación (qué falta o qué está mal)"></div>`
+          :`<div class="rf"><span class="chip ${it.est==="ok"?"c-good":it.est==="inc"?"c-warn":it.est==="aus"?"c-crit":""}">${(EST.find(x=>x[0]===(it.est||""))||EST[0])[1]}</span>${it.pag?` <span class="tag">pág. ${esc(it.pag)}</span>`:""}${it.obs?`<span class="o">${esc(it.obs)}</span>`:""}</div>`}</div>`).join("")}</div>`
+    :`<div class="note y">${d._scan||!d._text?"El archivo es escaneado o no tiene texto, así que la revisión se hace a mano.":"Aún no se ha revisado el contenido."} La lista trae los ${REV[d.tipo].items.length} ítems mínimos recomendados (${esc(G.ref||"NSR-10")}) y qué debe incluir cada uno.
+      ${edR?`<div class="actions" style="margin-top:8px"><button class="btn small primary" data-act="revManual" data-id="${d.id}">Hacer la revisión manual</button></div>`:""}</div>`}</section>`;})():""}
   ${d._text?`<details class="raw"><summary>Ver el texto leído del archivo</summary><pre>${esc(d._text.slice(0,6000))}${d._text.length>6000?"\n…":""}</pre></details>`:""}`,
-  foot:`<button class="btn" data-act="pdfDoc" data-id="${d.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveDoc" data-id="${d.id}">Guardar</button>`:""}${flujoBtns(d,"doc")}`};
+  foot:`${delBtn("doc",d)}<button class="btn" data-act="pdfDoc" data-id="${d.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveDoc" data-id="${d.id}">Guardar</button>`:""}${flujoBtns(d,"doc")}`};
 }
 function pdfDocHTML(d){
   return hdrHTML("Ficha de documento",DOC_TIPOS[d.tipo])+`<h2>Documento</h2><table><colgroup><col style="width:26%"><col></colgroup><tbody><tr><th>Nombre</th><td style="white-space:normal">${esc(d.nombre)}</td></tr><tr><th>Tipo</th><td>${esc(DOC_TIPOS[d.tipo])}</td></tr><tr><th>Versión</th><td>${esc(d.version)}</td></tr><tr><th>Fecha</th><td>${fd(d.fecha)}</td></tr>${d.vence?`<tr><th>Vence</th><td>${fd(d.vence)}</td></tr>`:""}<tr><th>Estado</th><td>${FLUJO[d.flujo||"borrador"][0]}</td></tr><tr><th>Archivo adjunto</th><td>${d.archivo?esc(d.archivo.nombre):"Sin archivo"}</td></tr></tbody></table>
   <h2>Información principal</h2><table class="wrap"><colgroup><col style="width:26%"><col></colgroup><tbody>${Object.entries(d.datos||{}).filter(([k,v])=>v).map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")||"<tr><td>Sin datos</td></tr>"}</tbody></table>
-  ${(d.rev||[]).length?`<h2>Revisión de contenido mínimo · ${REV[d.tipo].label}</h2><table class="wrap"><colgroup><col style="width:40%"><col style="width:14%"><col style="width:8%"><col></colgroup><thead><tr><th>Ítem</th><th>Resultado</th><th>Pág.</th><th>Observación</th></tr></thead><tbody>${d.rev.map(it=>`<tr><td>${esc(it.t)}</td><td class="${it.est==="ok"?"st-ok":"st-nc"}">${it.est==="ok"?"Encontrado":it.est==="inc"?"Incompleto":"Ausente"}</td><td>${esc(it.pag||"")}</td><td>${esc(it.obs||"")}</td></tr>`).join("")}</tbody></table>`:""}${firmasHTML()}`;
+  ${(d.rev||[]).length?`<h2>Revisión de contenido mínimo · ${REV[d.tipo].label}</h2><table class="wrap"><colgroup><col style="width:40%"><col style="width:14%"><col style="width:8%"><col></colgroup><thead><tr><th>Ítem</th><th>Resultado</th><th>Pág.</th><th>Observación</th></tr></thead><tbody>${d.rev.map(it=>`<tr><td>${esc(it.t)}</td><td class="${it.est==="ok"?"st-ok":it.est?"st-nc":""}">${it.est==="ok"?"Encontrado":it.est==="inc"?"Incompleto":it.est==="aus"?"Ausente":"Sin revisar"}</td><td>${esc(it.pag||"")}</td><td>${esc(it.obs||"")}</td></tr>`).join("")}</tbody></table>`:""}${firmasHTML()}`;
 }
 function sheetCert(c){const ed=canEdit()&&c.flujo!=="aprobado";const dis=ed?"":"disabled";
   return{title:`${c.id} · ${c.material||"Certificado"}`,sub:`${esc(c.proveedor)} · ${fd(c.fecha)}`,
   body:`${viaNote(c)}<div>${flujoChip(c.flujo)}</div>${archivoHTML(c,"cert",canEdit())}
   <section class="form"><label class="full">Material<input type="text" id="cMat" value="${esc(c.material)}" ${dis}></label><label>Proveedor<input type="text" id="cProv" value="${esc(c.proveedor)}" ${dis}></label><label>Lote o colada<input type="text" id="cLote" value="${esc(c.lote)}" ${dis}></label><label>Norma<input type="text" id="cNorma" value="${esc(c.norma)}" ${dis}></label><label>Cantidad<input type="text" id="cCant" value="${esc(c.cantidad)}" ${dis}></label><label>Fecha<input type="date" id="cFecha" value="${esc(c.fecha)}" ${dis}></label><label>Resultado<select id="cRes" ${dis}>${["","Cumple","No cumple"].map(v=>`<option ${v===c.resultado?"selected":""} value="${v}">${v||"Sin dato"}</option>`).join("")}</select></label></section>
   ${c._text?`<details class="raw"><summary>Ver el texto leído del archivo</summary><pre>${esc(c._text.slice(0,5000))}</pre></details>`:""}`,
-  foot:`<button class="btn" data-act="pdfCert" data-id="${c.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveCert" data-id="${c.id}">Guardar</button>`:""}${flujoBtns(c,"cert")}`};}
+  foot:`${delBtn("cert",c)}<button class="btn" data-act="pdfCert" data-id="${c.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveCert" data-id="${c.id}">Guardar</button>`:""}${flujoBtns(c,"cert")}`};}
 /* ============================================================
    Inspecciones
    ============================================================ */
@@ -287,7 +341,7 @@ function vInspeccion(){
   const f=U.tabInsp;const cnt=k=>{const l=items.filter(it=>it.fase===k);return `${l.filter(it=>r[it.id]&&r[it.id].e).length}/${l.length}`;};
   const ncOpen=k=>items.filter(it=>it.fase===k&&r[it.id]&&r[it.id].e==="NC"&&!r[it.id].fix).length;
   return `<div class="phead"><div><button class="link" data-act="nav" data-v="inspecciones">← Inspecciones</button><div class="eyebrow" style="margin-top:8px">${esc(i.torre)} · ${esc(i.nivel)} · ${fd(i.fecha)} · ${i.id}</div><h1>${esc(CHK[i.tipo]?.label||i.tipo)}</h1><p>${esc(i.ident)} · ${inspChip(s.estado)}</p></div>
-  <div class="actions"><button class="btn" data-act="pdfInsp" data-id="${i.id}">${IC.pdf} Exportar PDF</button></div></div>
+  <div class="actions">${delBtn("insp",i)}<button class="btn" data-act="pdfInsp" data-id="${i.id}">${IC.pdf} Exportar PDF</button></div></div>
   ${s.estado==="conforme"?`<div class="note ok">Elemento conforme en las tres fases (${FASES.map(([k,l])=>`${l.toLowerCase()}: ${fd(s.fases[k].conf)}`).join(" · ")}).</div>`:s.nc?`<div class="note bad">El elemento requiere corrección: ${s.nc} ítem(s) no cumplen. Cuando el constructor corrija, verifica en obra y márcalos como corregidos.</div>`:""}
   <div class="fasesbar">${FASES.map(([k,l])=>{const fz=s.fases[k];return `<div class="fase ${fz.conf?"ok":fz.nc?"bad":""}"><span class="eyebrow">${l}</span><b>${fz.conf?"Conforme":fz.nc?"Requiere corrección":fz.done===fz.total?"Lista para declarar":"En revisión"}</b><span class="sub">${fz.conf?fd(fz.conf):`${fz.done}/${fz.total} ítems`}</span></div>`;}).join("")}</div>
   <section class="panel"><header><h2>Fotos del elemento</h2><span class="muted">${(i.fotos||[]).length}</span></header>${photosHTML(i.fotos,"insp:"+i.id,ed,ed)}</section>
@@ -352,7 +406,7 @@ function sheetNC(n){
     ${pend&&canEdit()?`<div class="panel hl"><h3>Verificar la respuesta</h3><textarea id="vObs" placeholder="Observación de la verificación en obra (obligatoria si se rechaza)"></textarea><div class="actions" style="justify-content:flex-end"><button class="btn danger" data-act="veredicto" data-id="${n.id}" data-v="rechazada">Rechazar respuesta</button><button class="btn ok" data-act="veredicto" data-id="${n.id}" data-v="aceptada">Aceptar y levantar la NC</button></div></div>`:""}
   </section>`:""}
   ${n.estado==="cerrada"?`<div class="note ok">No conformidad levantada el ${fd(n.cierre)}.</div>`:""}`,
-  foot:draft?`<button class="btn primary" data-act="saveNC">Guardar borrador</button>`:`<button class="btn" data-act="pdfNC" data-id="${n.id}">${IC.pdf} PDF</button>${edSup?`<button class="btn" data-act="saveNC">Guardar</button>`:""}${n.estado!=="cerrada"?flujoBtns(n,"nc","Emitir al constructor"):""}`};
+  foot:draft?`<button class="btn primary" data-act="saveNC">Guardar borrador</button>`:`${delBtn("nc",n)}<button class="btn" data-act="pdfNC" data-id="${n.id}">${IC.pdf} PDF</button>${edSup?`<button class="btn" data-act="saveNC">Guardar</button>`:""}${n.estado!=="cerrada"?flujoBtns(n,"nc","Emitir al constructor"):""}`};
 }
 function pdfNCHTML(n){
   return hdrHTML("No conformidad",`${n.id} · ${fd(n.fecha)}`)+`<h2>Datos</h2><table><tbody><tr><th>Número</th><td>${n.id}</td><th>Fecha</th><td>${fd(n.fecha)}</td></tr><tr><th>Origen</th><td>${esc(n.origen||"")}</td><th>Estado</th><td class="${n.estado==="cerrada"?"st-ok":"st-nc"}">${NCE[n.estado][0]}${n.cierre?" · "+fd(n.cierre):""}</td></tr><tr><th>Ubicación</th><td style="white-space:normal">${esc(n.ubic)}, ${esc(n.torre||"")}</td><th>Fecha límite</th><td>${fd(n.limite)}</td></tr><tr><th>Norma</th><td colspan="3">${esc(n.numeral)}</td></tr></tbody></table>
@@ -393,7 +447,7 @@ function vFotos(){
 const REPT={semanal:"Informe semanal de supervisión técnica",mensual:"Acta mensual de supervisión técnica",final:"Certificación técnica de ocupación"};
 const REPS={semanal:"Informe semanal",mensual:"Acta mensual",final:"Certificación técnica"};
 const REPP={semanal:"IS-",mensual:"AM-",final:"CTO-"};
-const repNo=r=>`${REPS[r.tipo]} No. ${parseInt(String(r.id).replace(/^\D+/,""),10)||1}`;
+const repNo=r=>`${REPS[r.tipo]} ${r.id}`;
 function defRange(tipo){
   if(tipo==="semanal")return{desde:addD(TODAY,-6),hasta:TODAY};
   if(tipo==="mensual")return{desde:TODAY.slice(0,8)+"01",hasta:TODAY};
@@ -449,8 +503,9 @@ function repHTML(rep){
     ${H("Documentación y no conformidades")}${tDocsHTML(R)}${txtP(rep.txtDoc)}
     ${fotos.length?`${H("Registro fotográfico")}${grid2PDF(fotos)}`:""}`;
   }else if(rep.tipo==="mensual"){
-    body=`${H("Certificados de materiales recibidos")}${tCertHTML(R)}${txtP(rep.txtCert)}
-    ${H("Resultados de los ensayos")}${tEnsHTML(R)}${txtP(rep.txtEns)}
+    const fp=p.fotoPrincipal&&PH.get(p.fotoPrincipal);
+    body=`${fp?`<figure class="fotoprin"><img src="${fp}" alt=""><figcaption>${esc(p.nombre)}</figcaption></figure>`:""}${H("Certificados de materiales recibidos")}${tCertHTML(R)}${txtP(rep.txtCert)}
+    ${H("Resultados de los ensayos")}${tEnsHTML(R)}${ensChartsHTML(p,R.ensAll.filter(r=>r.fecha&&r.fecha<=rep.hasta))}${txtP(rep.txtEns)}
     ${H("Elementos inspeccionados")}${txtP(rep.txtInsp)}${tInsHTML(R)}
     ${H("Avance de obra")}${tAvHTML(rep)}
     ${fotos.length?`${H("Registro fotográfico")}${grid2PDF(fotos)}`:""}
@@ -463,7 +518,7 @@ function repHTML(rep){
     ${H("Resumen de controles")}<table><tbody><tr><th>Elementos conformes</th><td>${p.inspecciones.filter(i=>i.conforme).length} de ${p.inspecciones.length}</td></tr><tr><th>Ensayos de resistencia evaluados</th><td>${R.ens.length}</td></tr><tr><th>Certificados de materiales aprobados</th><td>${R.certs.length}</td></tr><tr><th>No conformidades levantadas / abiertas</th><td>${p.nc.filter(n=>n.flujo==="aprobado"&&n.estado==="cerrada").length} / ${R.ncA.length}</td></tr></tbody></table>
     ${H("Certificación")}<p class="lead">${esc(rep.concl||defaultConcl(rep,R))}</p><p>Declaro bajo la gravedad de juramento que no me encuentro incurso en las incompatibilidades del Título I de la NSR-10.</p>`;
   }
-  return hdrHTML(REPT[rep.tipo],`No. ${parseInt(String(rep.id).replace(/^\D+/,""),10)||1}`,`<b>Periodo:</b> ${per}`)+body+firmasHTML();
+  return hdrHTML(REPT[rep.tipo],`No. ${rep.id}`,`<b>Periodo:</b> ${per}`)+body+firmasHTML();
 }
 function vInformes(){
   const p=P();const l=p.informes.filter(visible).slice().sort((a,b)=>b.creado.localeCompare(a.creado)||b.id.localeCompare(a.id));const nr=U.newRep;
@@ -474,7 +529,7 @@ function vInformes(){
     <label>Cobertura desde<input type="date" id="nrDesde" value="${nr.desde}"></label><label>Hasta<input type="date" id="nrHasta" value="${nr.hasta}"></label>
     <button class="btn primary" data-act="genRep">${IC.rep} Generar informe</button></div></section>`:""}
   <section class="panel"><header><h2>Informes generados</h2><span class="muted">${l.length}</span></header>
-  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Tipo</th><th>Cobertura</th><th>Generado</th><th>Estado</th></tr></thead><tbody>${l.map(r=>`<tr class="click" data-act="goto" data-v="informe" data-id="${r.id}"><td class="n">${parseInt(String(r.id).replace(/^\D+/,""),10)||1}</td><td><b>${REPS[r.tipo]}</b></td><td class="n">${fd(r.desde)} – ${fd(r.hasta)}</td><td class="n">${fd(r.creado)}</td><td>${flujoChip(r.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Aún no hay informes.</div>'}</section>`;
+  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Tipo</th><th>Cobertura</th><th>Generado</th><th>Estado</th></tr></thead><tbody>${l.map(r=>`<tr class="click" data-act="goto" data-v="informe" data-id="${r.id}"><td class="n">${r.id}</td><td><b>${REPS[r.tipo]}</b></td><td class="n">${fd(r.desde)} – ${fd(r.hasta)}</td><td class="n">${fd(r.creado)}</td><td>${flujoChip(r.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Aún no hay informes.</div>'}</section>`;
 }
 const secH=(n,t,sub)=>`<header><h2><span class="secnum">${n}</span>${t}</h2>${sub?`<span class="muted" style="font-size:12.5px">${sub}</span>`:""}</header>`;
 function avEditor(rep,ed){const l=rep.avance||[];
@@ -500,7 +555,7 @@ function vInforme(){
     <section class="panel">${secH(6,"Conclusiones")}${ta("concl","Conclusiones y recomendaciones",5)}${ed?`<div class="actions"><button class="btn small ai" data-act="aiConcl" data-id="${rep.id}">${IC.spark} Redactar con IA</button></div>`:""}</section>`;
   else sec=`<section class="panel">${secH(1,"Certificación")}${ta("concl","Texto de la certificación",6)}${ed?`<div class="actions"><button class="btn small ai" data-act="aiConcl" data-id="${rep.id}">${IC.spark} Redactar con IA</button></div>`:""}</section>`;
   return `<div class="phead"><div><button class="link" data-act="nav" data-v="informes">← Informes</button><div class="eyebrow" style="margin-top:8px">${repNo(rep)} · del ${fd(rep.desde)} al ${fd(rep.hasta)}</div><h1>${REPS[rep.tipo]}</h1></div>
-  <div class="actions">${isCons()?"":flujoChip(rep.flujo)}<button class="btn" data-act="pdfRep" data-id="${rep.id}">${IC.pdf} Exportar PDF</button>${flujoBtns(rep,"rep")}</div></div>
+  <div class="actions">${isCons()?"":flujoChip(rep.flujo)}${delBtn("rep",rep)}<button class="btn" data-act="pdfRep" data-id="${rep.id}">${IC.pdf} Exportar PDF</button>${flujoBtns(rep,"rep")}</div></div>
   ${ed?`<section class="panel"><div class="form"><label>Cobertura desde<input type="date" id="repDesde" value="${rep.desde}"></label><label>Hasta<input type="date" id="repHasta" value="${rep.hasta}"></label></div></section>`:""}
   ${busyBox("concl","La IA está redactando con los datos del periodo…")}${rep.aiNote?`<div class="note ok">${esc(rep.aiNote)}</div>`:""}
   ${canEdit()?sec:""}
@@ -525,7 +580,11 @@ function vProyecto(){
   <section class="grid2"><div class="panel"><header><h2>Datos del proyecto</h2>${ed&&p.documentos.some(d=>d.tipo==="licencia")?`<button class="btn small" data-act="goto" data-v="documentos" data-id="${p.documentos.find(d=>d.tipo==="licencia").id}">Llenar desde la licencia</button>`:""}</header>
     <div class="form">${fi("nombre","Nombre",1)}${fi("direccion","Dirección")}${fi("municipio","Municipio")}${fi("propietario","Propietario")}${fi("constructora","Constructora")}${fi("directorObra","Director de obra")}${fi("licencia","Licencia")}${fi("curaduria","Curaduría",1)}${fi("area","Área construida")}${fi("unidades","Unidades")}${fi("contrato","Contrato de STI")}<label>Inicio de la supervisión<input type="date" data-pj="inicio" value="${esc(p.inicio||"")}" ${dis}></label>
     <label class="full">Torres o bloques (separados por coma)<input type="text" id="pjTorres" value="${esc((p.torres||[]).join(", "))}" ${dis}></label></div></div>
-    <div style="display:flex;flex-direction:column;gap:16px"><div class="panel"><header><h2>Equipo del proyecto</h2><span class="muted">${(p.miembros||[]).length}</span></header>${miembrosHTML(p,puedeGestionar(p))}${!puedeGestionar(p)?'<p class="muted" style="font-size:12px;margin:0">El administrador de la empresa agrega o quita miembros.</p>':""}</div>
+    <div style="display:flex;flex-direction:column;gap:16px">${(()=>{const fp=p.fotoPrincipal&&PH.get(p.fotoPrincipal);const fotos=allPhotos(p);
+      return `<div class="panel"><header><h2>Foto principal</h2><span class="muted" style="font-size:12px">Portada del acta mensual</span></header>
+      ${fp?`<img class="fotoprin-ui" src="${fp}" alt="Foto principal del proyecto">`:'<div class="empty" style="padding:18px">Sin foto principal.</div>'}
+      ${ed?`<div class="actions"><label class="btn small">${IC.up} Subir foto<input type="file" hidden accept="image/*" data-photo="principal"></label>${fotos.length?`<select data-fp aria-label="Elegir del registro fotográfico" style="width:auto;max-width:260px"><option value="">Elegir del registro fotográfico…</option>${fotos.slice().reverse().map(f=>`<option value="${esc(f.id)}" ${f.id===p.fotoPrincipal?"selected":""}>${fd(f.fecha)} · ${esc(f.cap)}</option>`).join("")}</select>`:""}${fp?`<button class="btn small ghostdanger" data-act="quitarFP">Quitar</button>`:""}</div>`:""}</div>`;})()}
+    <div class="panel"><header><h2>Equipo del proyecto</h2><span class="muted">${(p.miembros||[]).length}</span></header>${miembrosHTML(p,puedeGestionar(p))}${!puedeGestionar(p)?'<p class="muted" style="font-size:12px;margin:0">El administrador de la empresa agrega o quita miembros.</p>':""}</div>
     <div class="panel"><header><h2>Sistema estructural</h2></header>${sysPicker(p.sistemas||[],"proj")}${sysEffect(p.sistemas||[])}
     <div class="tablewrap"><table><thead><tr><th>Elemento</th><th>Ítems de la lista</th></tr></thead><tbody>${tiposDe(p).map(t=>`<tr><td>${CHK[t].label}</td><td class="n">${chkItems(t).length}</td></tr>`).join("")||'<tr><td colspan="2">Elige un sistema</td></tr>'}</tbody></table></div></div></div></section>
   ${puedeGestionar(p)?`<section class="panel"><header><h2>Eliminar proyecto</h2></header>${U.confirm==="delProj"?`<div class="confirm">Se borrará el proyecto con todos sus registros en este navegador. <button class="btn small danger" data-act="delProjYes">Sí, eliminar</button><button class="btn small" data-act="confirmNo">Cancelar</button></div>`:`<button class="btn danger" data-act="confirmAsk" data-v="delProj" style="align-self:flex-start">Eliminar este proyecto</button>`}</section>`:""}`;
