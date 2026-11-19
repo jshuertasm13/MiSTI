@@ -1,6 +1,6 @@
 # Mi STI
 
-Aplicativo web para la **Supervisión Técnica Independiente** (NSR-10, Título I): control documental, certificados de materiales, ensayos de concreto y mampostería, inspecciones de elementos, no conformidades, informes semanales y actas mensuales, y registro fotográfico.
+Aplicativo web para la **Supervisión Técnica Independiente** (NSR-10, Título I): control documental, certificados de materiales, ensayos de concreto y mampostería, control del concreto preparado en obra, inspecciones de elementos estructurales y no estructurales, no conformidades, informes semanales y actas mensuales, y registro fotográfico.
 
 Es un sitio estático (HTML, CSS y JavaScript sin compilación). Se publica directamente con GitHub Pages.
 
@@ -14,7 +14,7 @@ Es un sitio estático (HTML, CSS y JavaScript sin compilación). Se publica dire
 | `constructor1` | `demo1234` | Constructor: solo lectura y respuesta a no conformidades |
 | `admin.ejemplo` | `demo1234` | Administrador de otra empresa (*Ingeniería Ejemplo*) |
 
-El proyecto **«Proyecto de ensayo · Edificio Muestra»** trae un ejemplo de cada registro: documentos en todos los estados, certificados aprobados, en revisión y devueltos, ensayos de concreto, mortero, grouting, unidades y muretes en todos los estados (cumple, aceptable, promedio bajo, no cumple, pendiente, rotura atrasada, aprobada por concepto), inspecciones de cada tipo de elemento, no conformidades en cada estado, dos actas mensuales, dos informes semanales y registro fotográfico. El dueño de la plataforma (`admin`) está agregado como miembro para poder verlo.
+El proyecto **«Proyecto de ensayo · Edificio Muestra»** trae un ejemplo de cada registro: documentos en todos los estados, certificados aprobados, en revisión y devueltos, ensayos de concreto, mortero, grouting, unidades y muretes en todos los estados (cumple, aceptable, promedio bajo, no cumple, pendiente, rotura atrasada, aprobada por concepto), inspecciones de cada tipo de elemento (estructurales y no estructurales), dos registros de concreto preparado en obra, no conformidades por falla repetitiva y por error grave, dos actas mensuales, dos informes semanales y registro fotográfico. El dueño de la plataforma (`admin`) está agregado como miembro para poder verlo.
 
 Desde **Plataforma → Restablecer datos de demostración** se vuelve al estado inicial.
 
@@ -52,6 +52,7 @@ js/datos.js           Catálogos, listas de chequeo y datos de demostración
 js/core.js            Utilidades, sesión, permisos, paletas, fotos, IA, PDF
 js/vistas.js          Pantallas
 js/acciones.js        Eventos y acciones
+js/concreto-obra.js   Control del concreto preparado en obra
 js/ens-concreto.js    Módulo de ensayos de concreto (generado desde ensayos/concreto.html)
 js/ens-mamposteria.js Módulo de ensayos de mampostería (generado desde ensayos/mamposteria.html)
 ensayos/              Apps originales de ensayos (también funcionan solas)

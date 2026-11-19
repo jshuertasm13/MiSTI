@@ -4,6 +4,7 @@
    contenido mínimo de documentos, paletas y roles.
    ============================================================ */
 const IC={
+  mix:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M5 8l11-3 3 8-11 3z"/><path d="M8 16l-2 5M15 14l2 7M4 21h16"/><path d="M16 5l2-2"/></svg>',
   dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
   lab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/></svg>',
@@ -50,12 +51,34 @@ const CHK={
     durante:["Mortero con dosificación aprobada y tiempo de uso","Juntas llenas y de espesor uniforme","Inyección de grout por etapas y consolidada","Toma de muestras de mortero y grout"],despues:["Curado del mortero y del grout","Plomo y alineamiento final","Limpieza de rebabas y celdas"]},
   acero:{label:"Estructura metálica",antes:["Certificados de perfiles y soldadura","Dimensiones y espesores de perfiles","Placas base y pernos de anclaje: posición y nivel","Plomo de columnas","Conexiones según planos de taller","Soldadores calificados"],
     durante:["Procedimiento de soldadura aprobado","Torque de pernos","Inspección visual de soldaduras","Arriostramiento provisional"],despues:["Ensayos no destructivos de soldaduras","Limpieza y pintura anticorrosiva","Espesor de película de pintura","Mortero de nivelación bajo placas base"]},
-  deck:{label:"Losa en steel deck",antes:["Lámina: calibre y referencia","Fijación de la lámina a las vigas","Conectores de cortante","Malla o refuerzo de temperatura","Apuntalamiento cuando aplica","Remates de borde"]}
+  deck:{label:"Losa en steel deck",antes:["Lámina: calibre y referencia","Fijación de la lámina a las vigas","Conectores de cortante","Malla o refuerzo de temperatura","Apuntalamiento cuando aplica","Remates de borde"]},
+  /* ---- Elementos no estructurales (NSR-10 A.9) ---- */
+  mampnoest:{cat:"noest",label:"Muros divisorios y de fachada",antes:["Replanteo y plomo según planos arquitectónicos","Unidades con certificado aprobado, sin fisuras ni despuntes","Separación o junta con la estructura según el diseño de elementos no estructurales","Anclajes o dovelas a la estructura según el diseño","Refuerzo horizontal (escalerilla) y vertical cuando el diseño lo exige","Dinteles sobre vanos de puertas y ventanas"],
+    durante:["Mortero de pega con dosificación aprobada","Juntas llenas y de espesor uniforme","Plomo y alineamiento revisados por hilada","Celdas con dovela llenas de mortero o grout"],
+    despues:["Muro aplomado, sin fisuras ni desplomes","Junta con la estructura sellada con material flexible","Remate superior con holgura o anclaje según el diseño","Limpieza de rebabas y protección del muro"]},
+  antepechos:{cat:"noest",label:"Antepechos y parapetos",antes:["Altura según el diseño arquitectónico","Anclaje a la losa: dovelas o columnetas según el diseño","Columnetas y viga de remate con refuerzo según planos","Unidades y mortero aprobados"],
+    durante:["Columnetas a la separación de diseño","Fundida de columnetas y viga de remate","Juntas llenas y de espesor uniforme"],
+    despues:["Estable: sin movimiento al empuje manual","Sin fisuras en la unión con la losa","Barandas o pasamanos fijados cuando aplica"]},
+  fachadas:{cat:"noest",label:"Fachadas y enchapes",antes:["Diseño de anclaje de la fachada aprobado","Superficie de soporte limpia, aplomada y curada","Anclajes mecánicos: tipo y separación según el diseño","Juntas de dilatación ubicadas según planos"],
+    durante:["Adhesivo o mortero según especificación","Anclaje en cada pieza cuando el diseño lo exige","Juntas de ancho uniforme"],
+    despues:["Piezas sin sonido hueco (prueba de percusión)","Juntas selladas","Sin fisuras ni desprendimientos"]},
+  cielos:{cat:"noest",label:"Cielos rasos",antes:["Diseño de soportes y separación de cuelgas","Anclajes a la losa según especificación","Perfiles y placas con referencia aprobada"],
+    durante:["Cuelgas verticales a la separación de diseño","Arriostramiento lateral cuando el diseño lo exige","Holgura perimetral para el movimiento de la estructura"],
+    despues:["Nivel y planitud","Luminarias y difusores con soporte propio","Sin deflexiones visibles"]},
+  equipos:{cat:"noest",label:"Anclaje de equipos e instalaciones",antes:["Diseño de anclaje de equipos (tanques, bombas, plantas, ascensores)","Pernos o anclajes según especificación","Tuberías con juntas flexibles al cruzar juntas de construcción"],
+    durante:["Anclajes con la profundidad y el torque de diseño","Soportes sísmicos de tuberías y ductos"],
+    despues:["Equipos sin desplazamiento","Prueba de anclajes cuando se exige","Registro fotográfico de los anclajes"]},
+  ventaneria:{cat:"noest",label:"Ventanería y vidrios",antes:["Vanos a escuadra y con las dimensiones de diseño","Holgura perimetral para la deriva del entrepiso","Vidrio del tipo y espesor especificados (templado o laminado donde se exige)"],
+    durante:["Fijación de marcos según especificación","Sellos perimetrales continuos"],
+    despues:["Ventanas operan sin forzarse","Sellos continuos y sin fisuras","Vidrios sin fisuras ni despuntes"]}
 };
-const FASES=[["antes","Antes del vaciado"],["durante","Durante"],["despues","Después"]];
+const FASES=[["antes","Antes"],["durante","Durante"],["despues","Después"]];
 function chkItems(tipo){const c=CHK[tipo];if(!c)return[];const out=[];let n=0;
   [["antes",c.antes],["durante",c.durante||CONC_DUR],["despues",c.despues||CONC_DES]].forEach(([f,l])=>l.forEach((t,i)=>{n++;out.push({id:f+"-"+(i+1),fase:f,n,t});}));return out;}
-const tiposDe=p=>[...new Set((p.sistemas||[]).flatMap(s=>SIS[s]?SIS[s].t:[]))];
+const NOEST=Object.keys(CHK).filter(k=>CHK[k].cat==="noest");
+const esNoEst=t=>CHK[t]&&CHK[t].cat==="noest";
+const tiposEstDe=p=>[...new Set((p.sistemas||[]).flatMap(s=>SIS[s]?SIS[s].t:[]))];
+const tiposDe=p=>[...tiposEstDe(p),...NOEST];
 const ensDe=p=>[...new Set(["concreto",...(p.sistemas||[]).flatMap(s=>SIS[s]&&SIS[s].ens||[])])];
 
 const REV={
@@ -236,6 +259,64 @@ const CUENTAS_DEMO=[
    cada elemento, no conformidades en cada estado, informes
    semanales y mensuales, y registro fotográfico).
    ============================================================ */
+/* ============================================================
+   Control de concreto preparado en obra: lista de verificación de campo
+   (borrador técnico: los valores marcados [A CONFIRMAR] se ajustan a la especificación del proyecto)
+   ============================================================ */
+const CO_CHK=[
+  {k:"mat",l:"Materiales y almacenamiento",items:[
+    "Cemento del tipo especificado, con fecha de fabricación vigente y certificado del fabricante",
+    "Cemento almacenado bajo techo, sobre estibas y separado de muros; bultos sin grumos ni humedad",
+    "Arena y grava limpias, sin materia orgánica, terrones de arcilla ni basura",
+    "Acopio de agregados sobre superficie limpia y separado por tipo, sin contacto con el suelo natural",
+    "Agua limpia, potable o aprobada para concreto",
+    "Aditivos identificados, dentro de su vida útil y con ficha técnica en obra"]},
+  {k:"dos",l:"Dosificación",items:[
+    "Diseño de mezcla aprobado para el f'c y el asentamiento del elemento",
+    "Agua corregida por la humedad de los agregados del día",
+    "Agregados medidos por peso o en cajones calibrados (no por paladas)",
+    "Agua medida en recipiente aforado; no se agrega agua «a ojo»",
+    "Relación agua/cemento igual o menor a la del diseño",
+    "Bultos de cemento completos por bachada (no se fraccionan sin pesar)",
+    "Aditivo dosificado según la ficha técnica y el diseño"]},
+  {k:"mez",l:"Mezclado",items:[
+    "Mezcladora limpia, sin concreto endurecido en el tambor y con paletas en buen estado",
+    "Bachada dentro de la capacidad nominal de la mezcladora",
+    "Orden de carga según el procedimiento aprobado (parte del agua, grava, cemento, arena y resto del agua)",
+    "Tiempo de mezclado mínimo después de cargar todos los materiales [A CONFIRMAR: 1,5 min o lo que indique la especificación]",
+    "Mezcla homogénea, con color y consistencia uniformes entre bachadas",
+    "No se agrega agua ni se remezcla concreto que empezó a fraguar"]},
+  {k:"col",l:"Ensayos de campo y colocación",items:[
+    "Asentamiento medido con el cono (NTC 396) y dentro del rango del diseño",
+    "Temperatura del concreto medida y registrada",
+    "Cilindros tomados y marcados según NSR-10 C.5.6.2.1 (mínimo una muestra por día, por cada 40 m³ y por cada 200 m² de placa o muro)",
+    "Formaleta y refuerzo limpios y humedecidos antes de colocar",
+    "Concreto colocado antes del inicio de fraguado [A CONFIRMAR: tiempo máximo según la especificación]",
+    "Concreto vibrado sin segregación y con altura de caída controlada"]},
+  {k:"lim",l:"Limpieza y cierre",items:[
+    "Mezcladora, carretillas y herramientas lavadas al terminar",
+    "Agua de lavado y sobrantes dispuestos en el sitio definido, sin contaminar agregados, redes ni suelo",
+    "Acopios de agregados y cemento sobrante cubiertos y protegidos",
+    "Curado iniciado con el método definido (agua, membrana o plástico)",
+    "Cilindros protegidos en obra y programados para entrega al laboratorio"]}];
+const CO_ITEMS=CO_CHK.flatMap(s=>s.items.map((t,i)=>({id:s.k+"-"+(i+1),sec:s.k,n:i+1,t})));
+const CO_MAT=[["cemento","Cemento","kg"],["arena","Arena","kg"],["grava","Grava","kg"],["agua","Agua","L"],["aditivo","Aditivo","mL"]];
+function coDemo(){
+  const ok=(over={})=>{const r={};CO_ITEMS.forEach(it=>r[it.id]=over[it.id]||{e:"C"});return r;};
+  const dis={cemento:50,arena:110,grava:140,agua:27.5,aditivo:250};
+  const b=(hora,c,a,g,w,ad,tm,as,te)=>({hora,cemento:c,arena:a,grava:g,agua:w,aditivo:ad,tmez:tm,asent:as,temp:te});
+  return [
+    {id:"CO-01",fecha:"2026-11-05",torre:"Torre 2",elemento:"Columnetas y vigas de amarre, piso 4",fc:21,volumen:1.6,mezcladora:"Mezcladora de 1 bulto (tambor 350 L)",metodo:"peso",tol:5,asMin:7.5,asMax:10,tmin:1.5,diseno:dis,
+      bachadas:[b("08:10",50,111,139,27.5,250,2,9,22),b("08:35",50,109,141,27,250,2,8.5,22),b("09:00",50,112,140,27.5,250,1.8,9,23),b("09:25",50,110,138,28,250,2,9.5,23)],
+      cilindros:"Muestra 14 · 4 cilindros (2 a 7 días y 2 a 28 días)",lista:ok({"lim-4":{e:"C",obs:"Curado con agua tres veces al día durante 7 días."}}),fotos:["demo-20"],obs:"Vaciado continuo y sin novedad.",conforme:"2026-11-05",flujo:"aprobado"},
+    {id:"CO-02",fecha:"2026-11-14",torre:"Torre 1",elemento:"Antepechos y dinteles, piso 2",fc:21,volumen:1.2,mezcladora:"Mezcladora de 1 bulto (tambor 350 L)",metodo:"cajon",tol:5,asMin:7.5,asMax:10,tmin:1.5,diseno:dis,
+      bachadas:[b("10:05",50,112,141,27.5,250,1.5,9,24),b("10:30",50,118,135,31,250,1,13,24),b("10:55",50,110,140,27.5,250,1.8,9.5,25)],
+      cilindros:"Muestra 15 · 4 cilindros",
+      lista:ok({"dos-3":{e:"NC",fix:"2026-11-14",obs:"La arena de la bachada 2 se midió por paladas; se volvió a usar el cajón calibrado."},
+        "dos-4":{e:"NC",obs:"En la bachada 2 se agregó agua sin medir para facilitar la colocación (a/c 0,62, asentamiento 13 cm)."},
+        "mez-4":{e:"NC",fix:"2026-11-14",obs:"La bachada 2 se mezcló 1 minuto; se ajustó con cronómetro desde la bachada 3."},
+        "lim-2":{e:"NC",obs:"El agua de lavado de la mezcladora se vertió junto al acopio de arena."}}),
+      fotos:[],obs:"La bachada 2 se colocó en el dintel D-3 del eje 4. Se pide evaluar con la muestra 15.",conforme:"",flujo:"borrador"}];}
 function proyectoEnsayo(){
   const full=(tipo,except={})=>{const r={};chkItems(tipo).forEach(it=>{r[it.id]=except[it.id]||{e:"C"};});return r;};
   const antes=(tipo,except={})=>{const r={};chkItems(tipo).filter(it=>it.fase==="antes").forEach(it=>{r[it.id]=except[it.id]||{e:"C"};});return r;};
@@ -268,55 +349,58 @@ function proyectoEnsayo(){
       {id:"I-02",fecha:"2026-08-05",torre:"Torre 2",nivel:"Cimentación",tipo:"cimentacion",ident:"Losa de cimentación completa",resp:full("cimentacion"),fotos:[],conforme:"2026-08-05",obs:""},
       {id:"I-03",fecha:"2026-08-19",torre:"Torre 1",nivel:"Piso 1",tipo:"columnas",ident:"Columnas C1–C18",resp:full("columnas",{"antes-5":{e:"NC",fix:"2026-08-20",obs:"C6 con estribos a 14 cm en la zona confinada; el plano indica 10 cm. Se reubicaron y se verificó."}}),fotos:["demo-8"],conforme:"2026-08-20",obs:""},
       {id:"I-04",fecha:"2026-08-26",torre:"Torre 1",nivel:"Piso 1",tipo:"muros",ident:"Pantallas ejes 1 y 6",resp:full("muros"),fotos:[],conforme:"2026-08-26",obs:""},
-      {id:"I-05",fecha:"2026-09-01",torre:"Torre 2",nivel:"Piso 1",tipo:"mamposteria",ident:"Muros de bloque, ejes 1–5 / A–C",resp:full("mamposteria"),fotos:["demo-9"],conforme:"2026-09-01",obs:""},
+      {id:"I-05",fecha:"2026-09-01",torre:"Torre 2",nivel:"Piso 1",tipo:"mamposteria",ident:"Muros de bloque, ejes 1–5 / A–C",resp:full("mamposteria",{"antes-3":{e:"NC",fix:"2026-09-01",obs:"Rebabas de mortero en las dovelas del eje A; se limpiaron por las ventanas antes de inyectar."}}),fotos:["demo-9"],conforme:"2026-09-01",obs:""},
       {id:"I-06",fecha:"2026-09-02",torre:"Torre 1",nivel:"Placa piso 2",tipo:"vigaslosa",ident:"Placa completa, ejes 1–6 / A–D",resp:full("vigaslosa"),fotos:[],conforme:"2026-09-02",obs:""},
       {id:"I-07",fecha:"2026-09-22",torre:"Torre 2",nivel:"Placa piso 2",tipo:"losa",ident:"Losa de entrepiso completa",resp:full("losa"),fotos:[],conforme:"2026-09-22",obs:""},
       {id:"I-08",fecha:"2026-10-01",torre:"Torre 1",nivel:"Pisos 1 a 2",tipo:"escaleras",ident:"Escalera principal, tramos 1 y 2",resp:full("escaleras"),fotos:[],conforme:"2026-10-01",obs:""},
-      {id:"I-09",fecha:"2026-10-07",torre:"Torre 1",nivel:"Piso 3",tipo:"columnas",ident:"Columnas C1–C18",resp:full("columnas",{"antes-8":{e:"NC",fix:"2026-10-07",obs:"Faltaban distanciadores en C11 y C12; se instalaron antes del vaciado."}}),fotos:[],conforme:"2026-10-07",obs:""},
+      {id:"I-09",fecha:"2026-10-07",torre:"Torre 1",nivel:"Piso 3",tipo:"columnas",ident:"Columnas C1–C18",resp:full("columnas",{"antes-5":{e:"NC",fix:"2026-10-08",obs:"C11 y C12 con estribos a 15 cm en la zona confinada; el plano indica 10 cm. Es la misma falla de C6 en el piso 1 (I-03): se emite la NC-01."}}),fotos:[],conforme:"2026-10-08",obs:""},
       {id:"I-10",fecha:"2026-10-28",torre:"Torre 1",nivel:"Placa piso 4",tipo:"vigaslosa",ident:"Placa completa, ejes 1–6 / A–D",resp:full("vigaslosa"),fotos:["demo-14"],conforme:"2026-10-28",obs:""},
       {id:"I-11",fecha:"2026-11-04",torre:"Torre 2",nivel:"Piso 3",tipo:"mamposteria",ident:"Muros de bloque, ejes 1–5 / A–C",resp:full("mamposteria",{"antes-3":{e:"NC",fix:"",obs:"Dovelas sin limpiar en los muros del eje B: rebabas de mortero obstruyen las celdas a inyectar."}}),fotos:["demo-10"],conforme:"",obs:""},
       {id:"I-12",fecha:"2026-11-11",torre:"Torre 1",nivel:"Piso 4",tipo:"muros",ident:"Pantallas ejes 1 y 6",resp:full("muros"),fotos:["demo-11"],conforme:"2026-11-11",obs:""},
       {id:"I-13",fecha:"2026-11-13",torre:"Torre 2",nivel:"Piso 4",tipo:"mamposteria",ident:"Muros de bloque, ejes 1–5 / A–C",resp:full("mamposteria",{"antes-2":{e:"NC",fix:"2026-11-13",obs:"Refuerzo horizontal de escalerilla faltante en dos hiladas; se completó y se verificó."}}),fotos:[],conforme:"2026-11-13",obs:""},
       {id:"I-14",fecha:"2026-11-17",torre:"Torre 1",nivel:"Piso 5",tipo:"columnas",ident:"Columnas C1–C18",resp:full("columnas",{"antes-4":{e:"NC",obs:"C2 y C15 con traslapos de 40 cm en la zona confinada inferior; el plano exige traslapo en el tercio medio."}}),fotos:["demo-12","demo-13"],conforme:"",obs:""},
+      {id:"I-16",fecha:"2026-11-12",torre:"Torre 1",nivel:"Piso 2",tipo:"mampnoest",ident:"Muros divisorios de apartamentos 201 a 204",resp:full("mampnoest"),fotos:[],conforme:"2026-11-12",obs:""},
+      {id:"I-17",fecha:"2026-11-18",torre:"Torre 1",nivel:"Piso 3",tipo:"antepechos",ident:"Antepechos de balcones, fachada norte",resp:antes("antepechos",{"antes-2":{e:"NC",fix:"2026-11-18",obs:"Faltaban dovelas de anclaje en dos antepechos; se instalaron con epóxico y se verificó."}}),fotos:[],conforme:"",conf:{antes:"2026-11-18",durante:"",despues:""},obs:""},
       {id:"I-15",fecha:"2026-11-18",torre:"Torre 1",nivel:"Placa piso 5",tipo:"vigaslosa",ident:"Placa completa, ejes 1–6 / A–D",resp:antes("vigaslosa"),fotos:[],conforme:"",conf:{antes:"2026-11-18",durante:"",despues:""},obs:"Armado revisado; pendiente el control durante el vaciado."}],
     nc:[
-      {id:"NC-01",fecha:"2026-08-19",origen:"Inspección I-03",torre:"Torre 1",ubic:"Columna C6, piso 1",titulo:"Estribos de C6 más separados que en el diseño",descripcion:"En la columna C6 los estribos de la zona confinada están a 14 cm; el plano indica 10 cm.",numeral:"NSR-10 C.21.6.4",requerida:"Reubicar los estribos a 10 cm y revisar las demás columnas del nivel.",limite:"2026-08-21",fotos:["demo-8"],estado:"cerrada",flujo:"aprobado",insp:"I-03",item:"antes-5",cierre:"2026-08-20",
-        resp:[{id:"R1",fecha:"2026-08-20",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se reubicaron los estribos de C6 a 10 cm y se revisaron las 18 columnas del nivel.",preventiva:"El maestro de obra verifica con flexómetro la separación de estribos antes de pedir la revisión.",fotos:["demo-15"],veredicto:"aceptada",obs:"Verificado en obra.",fechaV:"2026-08-20"}]},
-      {id:"NC-02",fecha:"2026-10-09",origen:"Ensayo de concreto, muestra 6",muestra:"6",ensayo:"concreto:6",torre:"Torre 1",ubic:"Pantallas piso 2, ejes 1 y 6",titulo:"Resistencia a 28 días bajo el límite en pantallas del piso 2",descripcion:"La muestra 6 dio 16,8 MPa a 28 días, por debajo del límite individual de 17,5 MPa para f'c 21 MPa.",numeral:"NSR-10 C.5.6.3.3 (b) y C.5.6.5",requerida:"Extraer núcleos en las pantallas representadas por la muestra y presentar el concepto del diseñador estructural.",limite:"2026-11-09",fotos:[],estado:"respondida",flujo:"aprobado",
+      {id:"NC-01",fecha:"2026-10-07",motivo:"repetitiva",origen:"Inspecciones I-03 e I-09",torre:"Torre 1",ubic:"Columnas C6 (piso 1), C11 y C12 (piso 3)",titulo:"Separación de estribos mayor a la de diseño, repetida en dos pisos",descripcion:"En el piso 1 la columna C6 tenía los estribos de la zona confinada a 14 cm (I-03) y se corrigió en el momento. En el piso 3 la falla se repite en C11 y C12, con estribos a 15 cm (I-09). El plano indica 10 cm.",numeral:"NSR-10 C.21.6.4",requerida:"Reubicar los estribos a 10 cm, revisar todas las columnas del nivel y definir un control previo del constructor para que la falla no se repita.",limite:"2026-10-10",fotos:["demo-8"],estado:"cerrada",flujo:"aprobado",insp:"I-09",item:"antes-5",cierre:"2026-10-09",
+        resp:[{id:"R1",fecha:"2026-10-08",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se reubicaron los estribos de C11 y C12 a 10 cm y se revisaron las 18 columnas del nivel.",preventiva:"El maestro de obra verifica con flexómetro la separación de estribos y firma una lista antes de pedir la revisión.",fotos:["demo-15"],veredicto:"aceptada",obs:"Verificado en obra. En el piso 4 no se repitió.",fechaV:"2026-10-09"}]},
+      {id:"NC-02",fecha:"2026-10-09",motivo:"grave",origen:"Ensayo de concreto, muestra 6",muestra:"6",ensayo:"concreto:6",torre:"Torre 1",ubic:"Pantallas piso 2, ejes 1 y 6",titulo:"Resistencia a 28 días bajo el límite en pantallas del piso 2",descripcion:"La muestra 6 dio 16,8 MPa a 28 días, por debajo del límite individual de 17,5 MPa para f'c 21 MPa.",numeral:"NSR-10 C.5.6.3.3 (b) y C.5.6.5",requerida:"Extraer núcleos en las pantallas representadas por la muestra y presentar el concepto del diseñador estructural.",limite:"2026-11-09",fotos:[],estado:"respondida",flujo:"aprobado",
         resp:[{id:"R1",fecha:"2026-11-06",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se extrajeron 3 núcleos en las pantallas del piso 2 (promedio corregido 19,6 MPa). Se adjunta el concepto del diseñador, que acepta la resistencia obtenida.",preventiva:"Se reforzó el control de asentamiento y de agua adicionada en obra.",fotos:["demo-16"],veredicto:"",obs:""}]},
-      {id:"NC-03",fecha:"2026-10-14",origen:"Ensayo de grouting, muestra GR-02",muestra:"GR-02",ensayo:"mamposteria:GR-02",torre:"Torre 2",ubic:"Muros piso 2, ejes 1–5",titulo:"Grouting bajo el límite individual en muros del piso 2",descripcion:"La muestra GR-02 dio 13,6 MPa a 28 días; el límite individual para f'cr 17,5 MPa es 14,0 MPa.",numeral:"NSR-10 D.3.7",requerida:"Presentar un plan de verificación (extracción de muretes o núcleos) y el concepto del diseñador.",limite:"2026-11-10",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
-      {id:"NC-04",fecha:"2026-11-04",origen:"Inspección I-11",torre:"Torre 2",ubic:"Muros eje B, piso 3",titulo:"Dovelas obstruidas con rebabas de mortero",descripcion:"En los muros del eje B las celdas a inyectar tienen rebabas de mortero que impiden el paso del grouting.",numeral:"NSR-10 D.4.6",requerida:"Limpiar las celdas por las ventanas de inspección antes de inyectar y presentar fotos de cada ventana.",limite:"2026-11-25",fotos:["demo-10"],estado:"abierta",flujo:"aprobado",insp:"I-11",item:"antes-3",
+      {id:"NC-03",fecha:"2026-10-14",motivo:"grave",origen:"Ensayo de grouting, muestra GR-02",muestra:"GR-02",ensayo:"mamposteria:GR-02",torre:"Torre 2",ubic:"Muros piso 2, ejes 1–5",titulo:"Grouting bajo el límite individual en muros del piso 2",descripcion:"La muestra GR-02 dio 13,6 MPa a 28 días; el límite individual para f'cr 17,5 MPa es 14,0 MPa.",numeral:"NSR-10 D.3.7",requerida:"Presentar un plan de verificación (extracción de muretes o núcleos) y el concepto del diseñador.",limite:"2026-11-10",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
+      {id:"NC-04",fecha:"2026-11-04",motivo:"repetitiva",origen:"Inspecciones I-05 e I-11",torre:"Torre 2",ubic:"Muros eje B, piso 3",titulo:"Dovelas obstruidas con rebabas de mortero, falla repetida",descripcion:"En el piso 1 (I-05) se encontraron rebabas en las dovelas del eje A y se hizo limpiar. En el piso 3 (I-11) se repite en los muros del eje B: las celdas a inyectar tienen rebabas que impiden el paso del grouting.",numeral:"NSR-10 D.4.6",requerida:"Limpiar las celdas por las ventanas de inspección antes de inyectar y presentar fotos de cada ventana.",limite:"2026-11-25",fotos:["demo-10"],estado:"abierta",flujo:"aprobado",insp:"I-11",item:"antes-3",
         resp:[{id:"R1",fecha:"2026-11-08",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se limpiaron las celdas con varilla.",preventiva:"",fotos:[],veredicto:"rechazada",obs:"En la verificación aún había rebabas en 3 celdas y no se abrieron ventanas de limpieza. Se debe repetir con ventanas y fotos.",fechaV:"2026-11-10"}]},
-      {id:"NC-05",fecha:"2026-11-12",origen:"Revisión documental",torre:"General",ubic:"Memoria de elementos no estructurales",titulo:"Falta el diseño del anclaje de antepechos",descripcion:"La memoria de elementos no estructurales no incluye el anclaje de antepechos y fachadas al sistema estructural.",numeral:"NSR-10 A.9",requerida:"Presentar la memoria complementada y firmada por el diseñador.",limite:"2026-11-28",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
-      {id:"NC-06",fecha:"2026-11-17",origen:"Inspección I-14",torre:"Torre 1",ubic:"Columnas C2 y C15, piso 5",titulo:"Traslapos de columnas en la zona confinada",descripcion:"En C2 y C15 los traslapos del refuerzo longitudinal quedaron en la zona confinada inferior; el plano exige ubicarlos en el tercio medio.",numeral:"NSR-10 C.21.6.3.2",requerida:"Reubicar los traslapos o presentar una solución aprobada por el diseñador.",limite:"2026-11-24",fotos:["demo-12"],estado:"abierta",flujo:"borrador",insp:"I-14",item:"antes-4",resp:[]}],
+      {id:"NC-05",fecha:"2026-11-12",motivo:"grave",origen:"Revisión documental",torre:"General",ubic:"Memoria de elementos no estructurales",titulo:"Falta el diseño del anclaje de antepechos",descripcion:"La memoria de elementos no estructurales no incluye el anclaje de antepechos y fachadas al sistema estructural.",numeral:"NSR-10 A.9",requerida:"Presentar la memoria complementada y firmada por el diseñador.",limite:"2026-11-28",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
+      {id:"NC-06",fecha:"2026-11-17",motivo:"grave",origen:"Inspección I-14",torre:"Torre 1",ubic:"Columnas C2 y C15, piso 5",titulo:"Traslapos de columnas en la zona confinada",descripcion:"En C2 y C15 los traslapos del refuerzo longitudinal quedaron en la zona confinada inferior; el plano exige ubicarlos en el tercio medio.",numeral:"NSR-10 C.21.6.3.2",requerida:"Reubicar los traslapos o presentar una solución aprobada por el diseñador.",limite:"2026-11-24",fotos:["demo-12"],estado:"abierta",flujo:"borrador",insp:"I-14",item:"antes-4",resp:[]}],
     fotos:[
       {id:"demo-17",fecha:"2026-09-30",desc:"Avance de estructura, Torre 1 piso 3",torre:"Torre 1"},
       {id:"demo-18",fecha:"2026-10-30",desc:"Mampostería de la Torre 2, piso 3",torre:"Torre 2"},
       {id:"demo-19",fecha:"2026-11-15",desc:"Vista general de la obra desde el acceso",torre:"General"},
       {id:"demo-20",fecha:"2026-11-18",desc:"Formaleta de la placa del piso 5, Torre 1",torre:"Torre 1"}],
     fotoDesc:{},fotoPrincipal:"demo-19",
-    avance:[{act:"Cimentación Torre 1",pct:100},{act:"Estructura Torre 1",pct:48},{act:"Cimentación Torre 2",pct:100},{act:"Mampostería estructural Torre 2",pct:62},{act:"Placas Torre 2",pct:55}],
+    avance:[["Torre 1","Cimentación",100],["Torre 1","Columnas y pantallas",50],["Torre 1","Placas de entrepiso",46],["Torre 1","Mampostería no estructural",8],["Torre 2","Cimentación",100],["Torre 2","Mampostería estructural",62],["Torre 2","Placas de entrepiso",55]].map(([torre,act,pct])=>({torre,act,pct})),
+    concObra:coDemo(),
     informes:[
       {id:"AM-001",tipo:"mensual",desde:"2026-09-01",hasta:"2026-09-30",creado:"2026-10-01",flujo:"aprobado",
         txtCert:"Se recibió y revisó el certificado del mortero de pega premezclado, conforme a la NTC 3329.",txtEns:"Las roturas a 28 días del periodo cumplen, salvo la muestra 6 de las pantallas del piso 2, que está por debajo del límite individual.",
-        txtInsp:"Se revisaron la mampostería del piso 1 de la Torre 2, la placa del piso 2 de ambas torres y la escalera; todos los elementos quedaron conformes.",
-        avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",10,22],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",0,18],["Placas Torre 2",0,15]].map(([act,ant,pct])=>({act,ant,pct})),
-        fotos:["demo-9","demo-17"],concl:"El avance de septiembre fue conforme al programa.\n- Gestionar con el laboratorio las roturas a 28 días de octubre.\n- Mantener el control de distanciadores en columnas."},
+        txtInsp:"Se revisaron la mampostería del piso 1 de la Torre 2, la placa del piso 2 de ambas torres y la escalera. En la Torre 2 se hizo limpiar las dovelas del eje A antes de inyectar; los demás elementos quedaron conformes.",
+        avance:[["Torre 1","Cimentación",100,100],["Torre 1","Columnas y pantallas",10,24],["Torre 1","Placas de entrepiso",8,20],["Torre 2","Cimentación",100,100],["Torre 2","Mampostería estructural",0,18],["Torre 2","Placas de entrepiso",0,15]].map(([torre,act,ant,pct])=>({torre,act,ant,pct})),
+        fotos:["demo-9","demo-17"],concl:"El avance de septiembre fue conforme al programa.\n- Gestionar con el laboratorio las roturas a 28 días de octubre.\n- Mantener el control de la separación de estribos en columnas."},
       {id:"AM-002",tipo:"mensual",desde:"2026-10-01",hasta:"2026-10-31",creado:"2026-11-01",flujo:"aprobado",
         txtCert:"Se recibió el certificado de la malla electrosoldada D-131.",txtEns:"Se generó la NC-02 por la muestra 6 y la NC-03 por el grouting GR-02. La muestra 8 queda con promedio bajo y se sigue de cerca.",
-        txtInsp:"Se revisaron las columnas del piso 3 y la placa del piso 4 de la Torre 1; se hizo corregir la falta de distanciadores en dos columnas.",
-        avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",22,38],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",18,45],["Placas Torre 2",15,35]].map(([act,ant,pct])=>({act,ant,pct})),
+        txtInsp:"Se revisaron las columnas del piso 3 y la placa del piso 4 de la Torre 1; la separación de estribos mayor a la de diseño se repitió en C11 y C12 (ya se había corregido en C6 del piso 1), por lo que se emitió la NC-01, que quedó cerrada el 9 de octubre.",
+        avance:[["Torre 1","Cimentación",100,100],["Torre 1","Columnas y pantallas",24,40],["Torre 1","Placas de entrepiso",20,36],["Torre 2","Cimentación",100,100],["Torre 2","Mampostería estructural",18,45],["Torre 2","Placas de entrepiso",15,35]].map(([torre,act,ant,pct])=>({torre,act,ant,pct})),
         fotos:["demo-14","demo-18"],concl:"Quedan abiertas dos no conformidades por resistencia (NC-02 y NC-03).\n- Presentar núcleos y concepto del diseñador para la NC-02.\n- Presentar el plan de verificación del grouting para la NC-03."},
       {id:"IS-001",tipo:"semanal",desde:"2026-11-09",hasta:"2026-11-15",creado:"2026-11-16",flujo:"aprobado",
         txtInsp:"Se revisaron las pantallas del piso 4 de la Torre 1 y la mampostería del piso 4 de la Torre 2. En la Torre 2 se hizo completar el refuerzo de escalerilla antes de continuar.",
         aspectos:"Completar el refuerzo horizontal de escalerilla en todas las hiladas indicadas en planos.\nLimpiar las dovelas por ventanas de inspección antes de inyectar.",
         txtDoc:"Se recibió la revisión 1.1 de los planos de la Torre 2 con el detalle de dovelas.",
-        avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",42,45],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",55,58],["Placas Torre 2",45,50]].map(([act,ant,pct])=>({act,ant,pct})),
+        avance:[["Torre 1","Cimentación",100,100],["Torre 1","Columnas y pantallas",44,47],["Torre 1","Placas de entrepiso",40,43],["Torre 1","Mampostería no estructural",0,4],["Torre 2","Cimentación",100,100],["Torre 2","Mampostería estructural",55,58],["Torre 2","Placas de entrepiso",45,50]].map(([torre,act,ant,pct])=>({torre,act,ant,pct})),
         fotos:["demo-11","demo-19"],concl:"",txtCert:"",txtEns:""},
       {id:"IS-002",tipo:"semanal",desde:"2026-11-16",hasta:"2026-11-22",creado:"2026-11-18",flujo:"borrador",
         txtInsp:"Se revisaron las columnas del piso 5 de la Torre 1, con traslapos mal ubicados en dos columnas (NC-06), y el armado de la placa del piso 5.",
         aspectos:"Columnas piso 5, Torre 1: ubicar los traslapos en el tercio medio.",txtDoc:"Se recibió la póliza de responsabilidad civil, en revisión.",
-        avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",45,48],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",58,62],["Placas Torre 2",50,55]].map(([act,ant,pct])=>({act,ant,pct})),
+        avance:[["Torre 1","Cimentación",100,100],["Torre 1","Columnas y pantallas",47,50],["Torre 1","Placas de entrepiso",43,46],["Torre 1","Mampostería no estructural",4,8],["Torre 2","Cimentación",100,100],["Torre 2","Mampostería estructural",58,62],["Torre 2","Placas de entrepiso",50,55]].map(([torre,act,ant,pct])=>({torre,act,ant,pct})),
         fotos:["demo-12","demo-20"],concl:"",txtCert:"",txtEns:""}],
     actividad:[
       {f:"2026-11-18",q:"Andrés Ruiz",t:"Inspección de la placa del piso 5, Torre 1: armado revisado."},

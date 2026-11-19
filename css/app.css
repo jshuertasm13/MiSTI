@@ -370,3 +370,19 @@ details.raw pre{white-space:pre-wrap;font-family:var(--f-mono);font-size:11.5px;
 .paper .fotoprin figcaption,.pdfdoc .fotoprin figcaption{font-size:10.5px;color:#555;margin-top:3px}
 
 .fotoprin-ui{width:100%;max-height:220px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.nchint{margin:6px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+table tr.grp td{background:var(--muted-bg);font-size:12.5px;padding-top:6px;padding-bottom:6px}
+table tr.grp .btn{margin-left:8px;padding:2px 8px}
+label.inline{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+label.inline select{width:auto}
+/* Concreto en obra */
+.cotable input[type=number]{width:70px;padding:4px 6px;text-align:right}
+.cotable input[type=time]{width:100px;padding:4px 6px;text-align:right}
+.cotable td,.cotable th{white-space:nowrap}
+.cotable th .sub{display:block;font-weight:400;font-size:11px;color:var(--ink-3)}
+.cotable td.cellwarn{background:#fff3c4}
+.cotable td.cellbad{background:var(--crit-bg);color:var(--crit)}
+.co-lim{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:10px}
+@media (max-width:720px){.co-lim{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.coalerts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.coalerts .note{margin:0}

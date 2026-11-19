@@ -29,7 +29,7 @@ async function hashPass(pass,salt){
   try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(txt));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
   catch(e){let h=5381;for(let i=0;i<txt.length;i++)h=((h<<5)+h+txt.charCodeAt(i))|0;return "x"+(h>>>0).toString(16);}
 }
-const DATA_V=3;
+const DATA_V=4;
 async function cargarDatos(){
   try{const raw=localStorage.getItem(LS);D=raw?JSON.parse(raw):null;}catch(e){D=null;}
   if(!D||!D.v||D.v>DATA_V){D=await seedDatos();
@@ -65,6 +65,16 @@ async function migrarDatos(){
       p.informes.slice().sort((a,b)=>(a.creado||"").localeCompare(b.creado||"")||(a.desde||"").localeCompare(b.desde||"")).forEach(r=>{if(nuevo(r))return;const old=r.id;r.id=REPP[r.tipo]+String(++n[r.tipo]).padStart(3,"0");
         (p.actividad||[]).forEach(a=>{a.t=a.t.split(old+" ").join(r.id+" ");});});}
   }
+  D.proyectos.forEach(p=>{if(!p.concObra)p.concObra=[];});
+  if(D.v<4&&D.demo){const p3=D.proyectos.find(p=>p.id==="P3");if(p3){const S=proyectoEnsayo().P;
+    S.inspecciones.forEach(i=>{if(!p3.inspecciones.some(x=>x.id===i.id)){normInsp(i);p3.inspecciones.push(i);}});
+    if(!p3.concObra.length)p3.concObra=S.concObra;
+    if((p3.avance||[]).every(a=>!a.torre))p3.avance=S.avance;
+    (p3.informes||[]).forEach(r=>{const sr=S.informes.find(x=>x.id===r.id&&x.tipo===r.tipo);if(sr&&(r.avance||[]).every(a=>!a.torre))r.avance=sr.avance.map(a=>Object.assign({},a));});}}
+  if(D.v<4){const torreDe=(p,a)=>{if(a.torre)return;const t=(p.torres||[]).find(t=>a.act&&a.act.toLowerCase().includes(t.toLowerCase()));a.torre=t||"General";if(t){const r=a.act.replace(new RegExp("\\s*"+t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*","i")," ").trim();if(r)a.act=r;}};
+    D.proyectos.forEach(p=>{(p.avance||[]).forEach(a=>torreDe(p,a));(p.informes||[]).forEach(r=>(r.avance||[]).forEach(a=>torreDe(p,a)));});
+D.proyectos.forEach(p=>(p.nc||[]).forEach(n=>{if(!n.motivo&&(n.ensayo||n.muestra))n.motivo="grave";}));
+    const p3=D.demo&&D.proyectos.find(p=>p.id==="P3");if(p3)(p3.nc||[]).forEach(n=>{if(!n.motivo)n.motivo={"NC-01":"repetitiva","NC-04":"repetitiva"}[n.id]||"grave";});}
   D.v=DATA_V;
 }
 function save(){try{localStorage.setItem(LS,JSON.stringify(D));}catch(e){toast("No se pudo guardar en este navegador (espacio lleno).");}}

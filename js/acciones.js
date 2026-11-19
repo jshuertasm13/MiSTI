@@ -72,7 +72,7 @@ async function aiObs(itemId){
   const r=await aiText(`Redacta en una o dos frases, en español técnico de supervisión técnica en Colombia, la observación de una revisión de obra. Ítem: "${it.t}". Elemento: ${elLabel(i)}, ${i.ident}. Resultado: ${a.e==="NC"?"no cumple":a.e==="C"?"cumple":"sin evaluar"}. Nota del residente: "${nota}". Devuelve solo la observación, sin comillas.`,{modelTier:"quick"});
   U.busy=null;if(r.text){i.resp[itemId]=Object.assign({},a,{obs:r.text});save();}else toast(aiErrMsg(r.err));render();
 }
-function readNCForm(n){if(!n||!$("ncTit"))return;n.origen=$("ncOrig").value;n.torre=$("ncTorre").value;n.ubic=$("ncUb").value;n.titulo=$("ncTit").value;n.descripcion=$("ncDesc").value;n.numeral=$("ncNum").value;n.limite=$("ncLim").value;n.requerida=$("ncReq").value;if($("ncNota"))n.nota=$("ncNota").value;}
+function readNCForm(n){if(!n||!$("ncTit"))return;if($("ncMot"))n.motivo=$("ncMot").value;n.origen=$("ncOrig").value;n.torre=$("ncTorre").value;n.ubic=$("ncUb").value;n.titulo=$("ncTit").value;n.descripcion=$("ncDesc").value;n.numeral=$("ncNum").value;n.limite=$("ncLim").value;n.requerida=$("ncReq").value;if($("ncNota"))n.nota=$("ncNota").value;}
 async function aiNC(){
   const S=U.sheet;const n=S.draft||P().nc.find(x=>x.id===S.id);readNCForm(n);
   const nota=(n.nota||"").trim();if(!nota){toast("Escribe una nota corta de lo que viste.");return;}
@@ -109,18 +109,19 @@ async function aiRepTxt(k){
 }
 function syncAvance(p,rep){/* el informe más reciente define el avance vigente del proyecto */
   const last=p.informes.filter(r=>(r.avance||[]).length).sort((a,b)=>(b.hasta||"").localeCompare(a.hasta||"")||b.id.localeCompare(a.id))[0];
-  if(last&&last.id===rep.id)p.avance=rep.avance.map(a=>({act:a.act,pct:+a.pct||0}));}
+  if(last&&last.id===rep.id)p.avance=rep.avance.map(a=>({torre:a.torre||"General",act:a.act,pct:+a.pct||0}));}
 function refreshPrev(){const rep=P()?.informes.find(r=>r.id===U.sel);const el=$("repPrev");if(rep&&el)el.innerHTML=repHTML(rep);}
 function newNC(extra){const p=P();openSheet("nc",null,{draft:Object.assign({id:"",fecha:TODAY,origen:"",torre:(p.torres||[])[0]||"",ubic:"",titulo:"",descripcion:"",numeral:"",requerida:"",limite:"",fotos:[],estado:"abierta",flujo:"borrador",resp:[]},extra||{})});}
 function photoTarget(ctx){const[k,id]=ctx.split(":");const p=P();
   if(k==="insp")return p.inspecciones.find(x=>x.id===id)?.fotos;
   if(k==="nc")return(id==="draft"?U.sheet&&U.sheet.draft:p.nc.find(x=>x.id===id))?.fotos;
   if(k==="resp")return U.respDraft[id]?.fotos;
+  if(k==="co")return(p.concObra||[]).find(x=>x.id===id)?.fotos;
   if(k==="ni")return U.sheet&&(U.sheet.fotos||(U.sheet.fotos=[]));return null;}
 function crearProyecto(){
   const nom=$("npNom").value.trim();if(!nom){toast("Escribe el nombre del proyecto.");return;}const sis=[...document.querySelectorAll('[data-sys="new"]:checked')].map(x=>x.value);if(!sis.length){toast("Elige al menos un sistema estructural.");return;}
   const me=ME();const np={id:uid("P"),empresaId:me.empresaId,nombre:nom,direccion:"",municipio:$("npMun").value.trim(),propietario:"",constructora:$("npCons").value.trim()||"Constructora",directorObra:$("npDir").value.trim(),licencia:$("npLic").value.trim(),curaduria:"",area:"",unidades:"",inicio:TODAY,contrato:"",
-    sistemas:sis,torres:$("npTorres").value.split(",").map(s=>s.trim()).filter(Boolean),miembros:[{uid:me.id,rol:me.rol==="constructor"?"director":me.rol}],documentos:[],certificados:[],inspecciones:[],nc:[],informes:[],actividad:[],avance:[],fotos:[],fotoDesc:{}};
+    sistemas:sis,torres:$("npTorres").value.split(",").map(s=>s.trim()).filter(Boolean),miembros:[{uid:me.id,rol:me.rol==="constructor"?"director":me.rol}],documentos:[],certificados:[],concObra:[],inspecciones:[],nc:[],informes:[],actividad:[],avance:[],fotos:[],fotoDesc:{}};
   if(!np.torres.length)np.torres=["General"];D.proyectos.push(np);SES.pid=np.id;saveSes();log("Proyecto creado.");save();U.sheet=null;go("proyecto");toast("Proyecto creado. Ahora asigna el equipo del proyecto.");}
 async function guardarUsuario(id){
   const nom=$("usNom").value.trim(),usr=$("usUser").value.trim().toLowerCase(),pass=$("usPass").value;
@@ -154,11 +155,11 @@ document.addEventListener("click",async ev=>{
   if(act!=="delRec"&&U.delArm){U.delArm=null;}
   switch(act){
     case"delRec":{const k=el.dataset.k,key=k+":"+id;if(U.delArm!==key){U.delArm=key;render();break;}U.delArm=null;
-      const L={doc:"documentos",cert:"certificados",insp:"inspecciones",nc:"nc",rep:"informes"}[k];const rec=p[L].find(x=>x.id===id);if(!rec||!puedeBorrar(rec))break;
+      const L={doc:"documentos",cert:"certificados",insp:"inspecciones",nc:"nc",rep:"informes",co:"concObra"}[k];const rec=p[L].find(x=>x.id===id);if(!rec||!puedeBorrar(rec))break;
       p[L]=p[L].filter(x=>x!==rec);if(rec.archivo)ARCH.del(rec.archivo.id);
       if(k==="nc"&&rec.insp)delete rec.insp;
-      log(`Registro borrado: ${rec.id} ${rec.nombre||rec.titulo||rec.material||(rec.tipo&&REPS[rec.tipo])||elLabel&&k==="insp"&&elLabel(rec)||""}.`);save();
-      U.sheet=null;const back={doc:"documentos",cert:"materiales",insp:"inspecciones",nc:"nc",rep:"informes"}[k];toast(`${rec.id} borrado.`);go(back);break;}
+      log(`Registro borrado: ${rec.id} ${rec.nombre||rec.titulo||rec.material||rec.elemento||(rec.tipo&&REPS[rec.tipo])||elLabel&&k==="insp"&&elLabel(rec)||""}.`);save();
+      U.sheet=null;const back={doc:"documentos",cert:"materiales",insp:"inspecciones",nc:"nc",rep:"informes",co:"concobra"}[k];toast(`${rec.id} borrado.`);go(back);break;}
     case"fillLogin":$("lgUser").value=el.dataset.u;$("lgPass").value=el.dataset.p;$("lgPass").focus();break;
     case"logout":logout();U.view="inicio";U.sheet=null;render();break;
     case"nav":go(v);break;
@@ -201,7 +202,7 @@ document.addEventListener("click",async ev=>{
       save();render();toast(v==="aprobado"?(k==="nc"?"No conformidad emitida. El constructor ya la puede ver y responder.":"Aprobado. El constructor ya lo puede ver."):v==="revision"?"Enviado al director para revisión.":v==="borrador"?"Reabierto: ya se puede corregir. Vuelve a aprobarlo cuando termines.":"Devuelto al residente.");break;}
     case"saveCert":{const c=p.certificados.find(x=>x.id===id);Object.assign(c,{material:$("cMat").value,proveedor:$("cProv").value,lote:$("cLote").value,norma:$("cNorma").value,cantidad:$("cCant").value,fecha:$("cFecha").value,resultado:$("cRes").value});save();render();toast("Certificado guardado.");break;}
     case"pdfCert":{const c=p.certificados.find(x=>x.id===id);exportPDF(hdrHTML("Control de certificado de calidad",c.id)+`<h2>Certificado ${c.id}</h2><table><colgroup><col style="width:28%"><col></colgroup><tbody><tr><th>Material</th><td>${esc(c.material)}</td></tr><tr><th>Proveedor</th><td>${esc(c.proveedor)}</td></tr><tr><th>Lote o colada</th><td>${esc(c.lote)}</td></tr><tr><th>Norma</th><td>${esc(c.norma)}</td></tr><tr><th>Fecha</th><td>${fd(c.fecha)}</td></tr><tr><th>Cantidad</th><td>${esc(c.cantidad)}</td></tr><tr><th>Resultado</th><td class="${c.resultado==="Cumple"?"st-ok":"st-nc"}">${esc(c.resultado||"—")}</td></tr><tr><th>Revisión de la supervisión</th><td>${FLUJO[c.flujo||"borrador"][0]}</td></tr><tr><th>Archivo adjunto</th><td>${c.archivo?esc(c.archivo.nombre):"Sin archivo"}</td></tr></tbody></table>`+firmasHTML(),fname(p.nombre,"certificado",c.id));break;}
-    case"ncFromEns":{const r=resumenEns(p).rows.find(x=>x.app===el.dataset.k&&x.cod===id);if(!r)break;newNC({ensayo:r.app+":"+r.cod,origen:`Ensayo de ${r.tl.toLowerCase()}, muestra ${r.cod}`,ubic:r.loc||r.elemento,nota:`Muestra ${r.cod} de ${r.tl.toLowerCase()}: ${r.base!=null?f1(r.base)+" MPa":"sin resultado a 28 días"} para ${f1(r.fc)} MPa especificados (${(EST_ENS[r.est]||[r.est])[0].toLowerCase()})`});break;}
+    case"ncFromEns":{const r=resumenEns(p).rows.find(x=>x.app===el.dataset.k&&x.cod===id);if(!r)break;newNC({ensayo:r.app+":"+r.cod,motivo:"grave",origen:`Ensayo de ${r.tl.toLowerCase()}, muestra ${r.cod}`,ubic:r.loc||r.elemento,nota:`Muestra ${r.cod} de ${r.tl.toLowerCase()}: ${r.base!=null?f1(r.base)+" MPa":"sin resultado a 28 días"} para ${f1(r.fc)} MPa especificados (${(EST_ENS[r.est]||[r.est])[0].toLowerCase()})`});break;}
     case"newInsp":if(!tiposDe(p).length){toast("Primero elige el sistema estructural del proyecto.");go("proyecto");break;}openSheet("newInsp",null,{fotos:[]});break;
     case"createInsp":{const nivel=$("niNivel").value.trim();if(!nivel){toast("Escribe el nivel del elemento.");break;}
       const i={id:nextId(p.inspecciones,"I-"),fecha:$("niFecha").value||TODAY,torre:$("niTorre").value,nivel,tipo:$("niTipo").value,ident:$("niIdent").value.trim()||"—",resp:{},fotos:U.sheet.fotos||[],conforme:"",conf:{antes:"",durante:"",despues:""},obs:""};
@@ -217,12 +218,12 @@ document.addEventListener("click",async ev=>{
     case"reabrirFase":{const i=p.inspecciones.find(x=>x.id===id);i.conf=i.conf||{};i.conf[v]="";i.conforme="";save();render();break;}
     case"pdfInspList":{const l=inspFiltradas();exportPDF(pdfInspListHTML(l),fname(p.nombre,"inspecciones",U.fi.mes||"todas"));break;}
     case"pdfInsp":{const i=p.inspecciones.find(x=>x.id===id);exportPDF(pdfInspHTML(i),fname(p.nombre,"inspeccion",i.id,CHK[i.tipo]?.label,i.nivel));break;}
-    case"clearFi":U.fi={mes:"",torre:"",estado:"",q:""};render();break;
+    case"clearFi":U.fi={mes:"",torre:"",cat:"",estado:"",q:""};render();break;
     case"ncFromItem":{const i=p.inspecciones.find(x=>x.id===U.sel);const it=chkItems(i.tipo).find(x=>x.id===id);const a=i.resp[id]||{};
-      newNC({insp:i.id,item:id,origen:`Inspección ${i.id}`,torre:i.torre,ubic:`${i.ident}, ${i.nivel}`,nota:a.obs||it.t,fotos:(i.fotos||[]).slice()});break;}
+      const pr=ncPrevias(p,i,id);newNC({insp:i.id,item:id,motivo:pr.length?"repetitiva":"",origen:pr.length?`Inspecciones ${listaY([...pr.map(x=>x.id),i.id])}`:`Inspección ${i.id}`,torre:i.torre,ubic:`${i.ident}, ${i.nivel}`,nota:a.obs||it.t,fotos:(i.fotos||[]).slice()});break;}
     case"newNC":newNC();break;
     case"aiNC":await aiNC();break;
-    case"saveNC":{const S=U.sheet;if(S.draft){const n=S.draft;readNCForm(n);if(!n.titulo.trim()){toast("Escribe un título o usa la IA para redactarla.");break;}
+    case"saveNC":{const S=U.sheet;if(S.draft){const n=S.draft;readNCForm(n);if(!n.titulo.trim()){toast("Escribe un título o usa la IA para redactarla.");break;}if(!n.motivo){toast("Elige el motivo: falla repetitiva sin corregir o error grave.");break;}
         n.id=nextId(p.nc,"NC-");delete n._ai;p.nc.push(n);log(`No conformidad ${n.id} en borrador: ${n.titulo}.`);save();U.sheet={kind:"nc",id:n.id};render();toast(`${n.id} guardada como borrador.`);}
       else{const n=p.nc.find(x=>x.id===S.id);readNCForm(n);delete n._ai;save();render();toast("No conformidad guardada.");}break;}
     case"sendResp":{const n=p.nc.find(x=>x.id===id);const rd=U.respDraft[id];rd.correctiva=$("rCorr").value.trim();rd.preventiva=$("rPrev").value.trim();
@@ -243,7 +244,7 @@ document.addEventListener("click",async ev=>{
     case"aiConcl":await aiConcl(id);break;
     case"aiRepTxt":await aiRepTxt(el.dataset.k);break;
     case"sugAsp":{const rep=p.informes.find(x=>x.id===U.sel);readRepForm(rep);const s=sugerirAspectos(rep);if(!s){toast("No hubo correcciones ni NC en el periodo.");break;}rep.aspectos=(rep.aspectos?rep.aspectos.trim()+"\n":"")+s;save();render();break;}
-    case"avAdd":{const rep=p.informes.find(x=>x.id===U.sel);readRepForm(rep);rep.avance=rep.avance||[];rep.avance.push({act:"",ant:0,pct:0});save();render();break;}
+    case"avAdd":{const rep=p.informes.find(x=>x.id===U.sel);readRepForm(rep);rep.avance=rep.avance||[];rep.avance.push({torre:el.dataset.v||($("avTorre")&&$("avTorre").value)||(p.torres||[])[0]||"General",act:"",ant:0,pct:0});save();render();break;}
     case"avDel":{const rep=p.informes.find(x=>x.id===U.sel);readRepForm(rep);rep.avance.splice(+el.dataset.i,1);syncAvance(p,rep);save();render();break;}
     case"pdfRep":{const rep=p.informes.find(x=>x.id===id);if(canEdit()&&rep.flujo!=="aprobado"){readRepForm(rep);save();}exportPDF(repHTML(rep),fname(p.nombre,REPS[rep.tipo],rep.desde,rep.hasta));break;}
     /* Fotos */
@@ -311,7 +312,7 @@ document.addEventListener("change",async ev=>{
   else if(t.id==="nrTipo"){U.newRep=Object.assign({tipo:t.value},defRange(t.value));render();}
   else if(t.id==="nrDesde"||t.id==="nrHasta"){U.newRep[t.id==="nrDesde"?"desde":"hasta"]=t.value;}
   else if(t.id==="repDesde"||t.id==="repHasta"){const rep=p.informes.find(r=>r.id===U.sel);readRepForm(rep);save();render();}
-  else if(t.dataset.rep||t.dataset.av){const rep=p.informes.find(r=>r.id===U.sel);if(t.dataset.av){const a=rep.avance[+t.dataset.av];a[t.dataset.k]=t.dataset.k==="act"?t.value:Math.max(0,Math.min(100,+t.value||0));syncAvance(p,rep);save();render();}else{readRepForm(rep);save();refreshPrev();}}
+  else if(t.dataset.rep||t.dataset.av){const rep=p.informes.find(r=>r.id===U.sel);if(t.dataset.av){const a=rep.avance[+t.dataset.av];a[t.dataset.k]=t.dataset.k==="act"||t.dataset.k==="torre"?t.value:Math.max(0,Math.min(100,+t.value||0));syncAvance(p,rep);save();render();}else{readRepForm(rep);save();refreshPrev();}}
   else if(t.dataset.phcap){p.fotoDesc=p.fotoDesc||{};const s=(p.fotos||[]).find(f=>f.id===t.dataset.phcap);if(s)s.desc=t.value;else p.fotoDesc[t.dataset.phcap]=t.value;save();}
   else if(t.dataset.rev){const d=p.documentos.find(x=>x.id===t.dataset.rev);d.rev[+t.dataset.i].est=t.value;save();renderSheet();}
   else if(t.dataset.fp!==undefined&&t.tagName==="SELECT"){if(t.value){p.fotoPrincipal=t.value;save();render();toast("Foto principal actualizada.");}}
