@@ -8,11 +8,12 @@ async function handleUpload(kind,file,sampleKey){
   const tipo=kind==="doc"?($("up-doc-tipo")?.value||"auto"):null;
   U.busy=kind;render();
   let rd,fuente;
-  try{if(file){rd=await readFile(file);fuente=file.name;}else{rd={text:SAMPLE_DOCS[sampleKey],pages:1,scanned:false};fuente="Documento de ejemplo";}}
+  let arch=null;
+  try{if(file){rd=await readFile(file);fuente=file.name;arch=await guardarArchivo(file).catch(()=>null);}else{rd={text:SAMPLE_DOCS[sampleKey],pages:1,scanned:false};fuente="Documento de ejemplo";}}
   catch(e){U.busy=null;render();toast("No se pudo abrir el archivo: "+(e&&e.message?e.message:"error")+".");return;}
   try{
-    if(kind==="doc")await ingestDoc(tipo,rd,fuente);
-    else if(kind==="cert")await ingestCert(rd,fuente);
+    if(kind==="doc")await ingestDoc(tipo,rd,fuente,arch);
+    else if(kind==="cert")await ingestCert(rd,fuente,arch);
   }catch(e){toast("Ocurrió un error al extraer los datos.");console.error(e);}
   U.busy=null;render();
 }
@@ -20,9 +21,9 @@ async function aiFromRead(prompt,rd){
   if(rd.scanned){if(rd.images&&rd.images.length)return aiJSON(prompt+"\n\nEl documento viene como imágenes de sus páginas.",{images:rd.images});return{err:"scan"};}
   return aiJSON(prompt+"\n\nTEXTO:\n"+rd.text.slice(0,45000));
 }
-async function ingestDoc(tipo,rd,fuente){
+async function ingestDoc(tipo,rd,fuente,arch){
   const p=P();if(tipo==="auto")tipo=rd.scanned?"otro":guessTipo(rd.text);
-  const d={id:nextId(p.documentos,"D"),tipo,nombre:DOC_TIPOS[tipo],version:"1",fecha:TODAY,flujo:"borrador",datos:{},fuente,_text:rd.text};
+  const d={id:nextId(p.documentos,"D"),tipo,nombre:DOC_TIPOS[tipo],version:"1",fecha:TODAY,flujo:"borrador",datos:{},fuente,archivo:arch||null,_text:rd.text};
   let r={err:"off"};
   if(tipo==="licencia"){
     if(aiReady())r=await aiFromRead(`Eres asistente de una firma de supervisión técnica en Colombia. Extrae los datos de esta licencia de construcción. Responde solo JSON con: {"numero","curaduria","fechaExpedicion" (AAAA-MM-DD),"vigenciaMeses" (número),"titular","direccion","areaConstruida","unidades","uso","responsables":[{"rol","nombre","matricula"}]}. Usa "" si un dato no aparece.`,rd);
@@ -51,11 +52,11 @@ async function reviewDoc(id){
     d.rev=items.map(t=>{const hit=pg.find(x=>t[1].test(x[1]));return{t:t[0],est:hit?"ok":"aus",pag:hit?hit[0]:"",obs:hit?"":"No se encontró en el texto; verifica en el documento."};});d.revVia="auto";}
   U.busy=null;log(`Revisión de contenido de ${d.nombre}: ${d.rev.filter(x=>x.est!=="ok").length} ítem(s) por resolver.`);save();render();
 }
-async function ingestCert(rd,fuente){
+async function ingestCert(rd,fuente,arch){
   const p=P();let r={err:"off"};let x,via="auto";
   if(aiReady())r=await aiFromRead(`Lee este certificado de calidad de un material de construcción. Responde solo JSON: {"material","proveedor","lote","norma","fecha" (AAAA-MM-DD),"cantidad","resultado": "Cumple"|"No cumple"|""}.`,rd);
   if(r.data){x=r.data;via="ia";}else if(!rd.scanned)x=rulesCert(rd.text);else{x={};via="scan";}
-  const c={id:nextId(p.certificados,"CE-"),material:x.material||"",proveedor:x.proveedor||"",lote:x.lote||"",norma:x.norma||"",fecha:x.fecha||TODAY,cantidad:x.cantidad||"",resultado:x.resultado||"",flujo:"borrador",via,aiErr:r.err,fuente,_text:rd.text};
+  const c={id:nextId(p.certificados,"CE-"),material:x.material||"",proveedor:x.proveedor||"",lote:x.lote||"",norma:x.norma||"",fecha:x.fecha||TODAY,cantidad:x.cantidad||"",resultado:x.resultado||"",flujo:"borrador",via,aiErr:r.err,fuente,archivo:arch||null,_text:rd.text};
   p.certificados.push(c);log(`Certificado ${c.id} cargado${c.material?": "+c.material:""}.`);save();openSheet("cert",c.id);
 }
 
@@ -135,7 +136,9 @@ async function guardarUsuario(id){
   if(pass)u.pass=await hashPass(pass,u.salt);
   save();const back=U.sheet&&U.sheet.back;U.sheet=back?{kind:"emp",id:back}:null;render();toast(nuevo?`Usuario creado. Entra con «${usr}» y la contraseña que definiste.`:"Usuario guardado.");}
 function respaldo(){const ens={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^mi-sti-ens-/.test(k))ens[k]=localStorage.getItem(k);}
-  return IDB.all().catch(()=>[]).then(fotos=>new Blob([JSON.stringify({app:"Mi STI",exportado:TODAY,datos:D,ensayos:ens,fotos})],{type:"application/json"}));}
+  const b64=blob=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(blob);});
+  return Promise.all([IDB.all().catch(()=>[]),ARCH.all().catch(()=>[])]).then(async([fotos,arch])=>{const archivos=[];for(const[k,v]of arch){const d=await b64(v.blob);if(d)archivos.push([k,{nombre:v.nombre,tipo:v.tipo,data:d}]);}
+    return new Blob([JSON.stringify({app:"Mi STI",exportado:TODAY,datos:D,ensayos:ens,fotos,archivos})],{type:"application/json"});});}
 
 /* ============================================================
    Eventos
@@ -158,7 +161,7 @@ document.addEventListener("click",async ev=>{
       else if(v==="documentos"&&id){go("documentos");if(p.documentos.find(x=>x.id===id))openSheet("doc",id);}
       else if(v==="nc"&&id){go("nc");openSheet("nc",id);}
       else if(v==="inspeccion"){U.tabInsp="antes";U.openItem={};go("inspeccion",id);}
-      else if(v==="ensayos"){U.tabEns="resumen";go("ensayos");}
+      else if(v==="ensayos"){go("ensayos");}
       else go(v,id);break;
     case"aiOn":if(PERM){await PERM.request(["sample"]).catch(()=>null);}await refreshAi();if(AI_STATE==="on")toast("IA activa.");break;
     case"closeSheet":closeSheet();break;
@@ -168,6 +171,7 @@ document.addEventListener("click",async ev=>{
     case"openCert":openSheet("cert",id);break;
     case"openNC":openSheet("nc",id);break;
     case"tabEns":U.tabEns=v;render();break;
+    case"pdfEns":exportPDF(pdfEnsHTML(p),fname(p.nombre,"ensayos",TODAY));break;
     case"tabInsp":U.tabInsp=v;render();break;
     case"sampleDoc":{const k=el.dataset.k;let key=k==="cert"?"cert":"licencia";if(k==="doc"){const t=$("up-doc-tipo")?.value;key=t==="suelos"?"suelos":"licencia";}handleUpload(k,null,key);break;}
     case"revDoc":await reviewDoc(id);break;
@@ -175,6 +179,7 @@ document.addEventListener("click",async ev=>{
       document.querySelectorAll("[data-dato]").forEach(x=>{d.datos[x.dataset.dato]=x.value;});Object.keys(d.datos).forEach(k=>{if(!d.datos[k])delete d.datos[k];});save();render();toast("Documento guardado.");break;}
     case"licToProj":{const d=p.documentos.find(x=>x.id===id);const g=k=>d.datos[k]||"";
       Object.assign(p,{licencia:g("Número")||p.licencia,curaduria:g("Curaduría")||p.curaduria,area:g("Área construida")||p.area,unidades:g("Unidades")||p.unidades,propietario:g("Titular")||p.propietario,direccion:g("Dirección")||p.direccion});save();render();toast("Datos del proyecto actualizados con la licencia.");break;}
+    case"verArch":case"bajarArch":{const rec=(el.dataset.k==="doc"?p.documentos:p.certificados).find(x=>x.id===id);if(rec&&rec.archivo)abrirArchivo(rec.archivo,act==="bajarArch");break;}
     case"pdfDoc":{const d=p.documentos.find(x=>x.id===id);exportPDF(pdfDocHTML(d),fname(p.nombre,"documento",d.nombre));break;}
     case"flujo":{const k=el.dataset.k;let rec;
       if(k==="doc")rec=p.documentos.find(x=>x.id===id);else if(k==="cert")rec=p.certificados.find(x=>x.id===id);
@@ -185,20 +190,24 @@ document.addEventListener("click",async ev=>{
       log(`${v==="aprobado"?(k==="nc"?"Emitida al constructor":"Aprobado y publicado"):v==="devuelto"?"Devuelto con observaciones":"Enviado a revisión"}: ${rec.id} ${nm}.`);
       save();render();toast(v==="aprobado"?(k==="nc"?"No conformidad emitida. El constructor ya la puede ver y responder.":"Aprobado. El constructor ya lo puede ver."):v==="revision"?"Enviado al director para revisión.":"Devuelto al residente.");break;}
     case"saveCert":{const c=p.certificados.find(x=>x.id===id);Object.assign(c,{material:$("cMat").value,proveedor:$("cProv").value,lote:$("cLote").value,norma:$("cNorma").value,cantidad:$("cCant").value,fecha:$("cFecha").value,resultado:$("cRes").value});save();render();toast("Certificado guardado.");break;}
-    case"pdfCert":{const c=p.certificados.find(x=>x.id===id);exportPDF(hdrHTML("Control de certificado de calidad",c.id)+`<h2>Certificado ${c.id}</h2><table><colgroup><col style="width:28%"><col></colgroup><tbody><tr><th>Material</th><td>${esc(c.material)}</td></tr><tr><th>Proveedor</th><td>${esc(c.proveedor)}</td></tr><tr><th>Lote o colada</th><td>${esc(c.lote)}</td></tr><tr><th>Norma</th><td>${esc(c.norma)}</td></tr><tr><th>Fecha</th><td>${fd(c.fecha)}</td></tr><tr><th>Cantidad</th><td>${esc(c.cantidad)}</td></tr><tr><th>Resultado</th><td class="${c.resultado==="Cumple"?"st-ok":"st-nc"}">${esc(c.resultado||"—")}</td></tr><tr><th>Revisión de la supervisión</th><td>${FLUJO[c.flujo||"borrador"][0]}</td></tr></tbody></table>`+firmasHTML(),fname(p.nombre,"certificado",c.id));break;}
+    case"pdfCert":{const c=p.certificados.find(x=>x.id===id);exportPDF(hdrHTML("Control de certificado de calidad",c.id)+`<h2>Certificado ${c.id}</h2><table><colgroup><col style="width:28%"><col></colgroup><tbody><tr><th>Material</th><td>${esc(c.material)}</td></tr><tr><th>Proveedor</th><td>${esc(c.proveedor)}</td></tr><tr><th>Lote o colada</th><td>${esc(c.lote)}</td></tr><tr><th>Norma</th><td>${esc(c.norma)}</td></tr><tr><th>Fecha</th><td>${fd(c.fecha)}</td></tr><tr><th>Cantidad</th><td>${esc(c.cantidad)}</td></tr><tr><th>Resultado</th><td class="${c.resultado==="Cumple"?"st-ok":"st-nc"}">${esc(c.resultado||"—")}</td></tr><tr><th>Revisión de la supervisión</th><td>${FLUJO[c.flujo||"borrador"][0]}</td></tr><tr><th>Archivo adjunto</th><td>${c.archivo?esc(c.archivo.nombre):"Sin archivo"}</td></tr></tbody></table>`+firmasHTML(),fname(p.nombre,"certificado",c.id));break;}
     case"ncFromEns":{const r=resumenEns(p).rows.find(x=>x.app===el.dataset.k&&x.cod===id);if(!r)break;newNC({ensayo:r.app+":"+r.cod,origen:`Ensayo de ${r.tl.toLowerCase()}, muestra ${r.cod}`,ubic:r.loc||r.elemento,nota:`Muestra ${r.cod} de ${r.tl.toLowerCase()}: ${r.base!=null?f1(r.base)+" MPa":"sin resultado a 28 días"} para ${f1(r.fc)} MPa especificados (${(EST_ENS[r.est]||[r.est])[0].toLowerCase()})`});break;}
     case"newInsp":if(!tiposDe(p).length){toast("Primero elige el sistema estructural del proyecto.");go("proyecto");break;}openSheet("newInsp",null,{fotos:[]});break;
     case"createInsp":{const nivel=$("niNivel").value.trim();if(!nivel){toast("Escribe el nivel del elemento.");break;}
-      const i={id:nextId(p.inspecciones,"I-"),fecha:$("niFecha").value||TODAY,torre:$("niTorre").value,nivel,tipo:$("niTipo").value,ident:$("niIdent").value.trim()||"—",resp:{},fotos:U.sheet.fotos||[],conforme:"",obs:""};
+      const i={id:nextId(p.inspecciones,"I-"),fecha:$("niFecha").value||TODAY,torre:$("niTorre").value,nivel,tipo:$("niTipo").value,ident:$("niIdent").value.trim()||"—",resp:{},fotos:U.sheet.fotos||[],conforme:"",conf:{antes:"",durante:"",despues:""},obs:""};
       p.inspecciones.push(i);log(`Inspección ${i.id} creada: ${elLabel(i)}.`);save();U.sheet=null;U.tabInsp="antes";U.openItem={};go("inspeccion",i.id);break;}
     case"ans":{if(!canEdit())break;const i=p.inspecciones.find(x=>x.id===U.sel);const a=i.resp[id]||{};const nv=a.e===v?null:v;i.resp[id]=Object.assign({},a,{e:nv});if(nv!=="NC")delete i.resp[id].fix;
-      if(nv==="NC"){U.openItem[id]=true;if(i.conforme){i.conforme="";toast("El elemento vuelve a «Requiere corrección».");}}save();render();break;}
+      if(nv==="NC"){U.openItem[id]=true;const fa=(chkItems(i.tipo).find(x=>x.id===id)||{}).fase;i.conf=i.conf||{};if(fa&&i.conf[fa]){i.conf[fa]="";i.conforme="";toast("La fase vuelve a revisión: hay un ítem que no cumple.");}}save();render();break;}
     case"toggleItem":U.openItem[id]=!U.openItem[id];render();break;
     case"aiObs":await aiObs(id);break;
-    case"conforme":{const i=p.inspecciones.find(x=>x.id===id);i.conforme=TODAY;log(`Elemento conforme: ${elLabel(i)}.`);save();render();toast("Elemento declarado conforme.");break;}
-    case"reabrirInsp":{const i=p.inspecciones.find(x=>x.id===id);i.conforme="";save();render();break;}
+    case"confFase":{const i=p.inspecciones.find(x=>x.id===id);i.conf=i.conf||{};i.conf[v]=TODAY;const lbl=FASES.find(x=>x[0]===v)[1].toLowerCase();
+      if(FASES.every(([k])=>i.conf[k])){i.conforme=TODAY;log(`Elemento conforme en las tres fases: ${elLabel(i)}.`);toast("Fase conforme. El elemento queda conforme.");}
+      else{log(`Fase «${lbl}» conforme: ${elLabel(i)}.`);toast("Fase declarada conforme.");const nx=FASES.find(([k])=>!i.conf[k]);if(nx)U.tabInsp=nx[0];}
+      save();render();break;}
+    case"reabrirFase":{const i=p.inspecciones.find(x=>x.id===id);i.conf=i.conf||{};i.conf[v]="";i.conforme="";save();render();break;}
+    case"pdfInspList":{const l=inspFiltradas();exportPDF(pdfInspListHTML(l),fname(p.nombre,"inspecciones",U.fi.mes||"todas"));break;}
     case"pdfInsp":{const i=p.inspecciones.find(x=>x.id===id);exportPDF(pdfInspHTML(i),fname(p.nombre,"inspeccion",i.id,CHK[i.tipo]?.label,i.nivel));break;}
-    case"clearFi":U.fi={desde:"",hasta:"",torre:"",estado:"",q:""};render();break;
+    case"clearFi":U.fi={mes:"",torre:"",estado:"",q:""};render();break;
     case"ncFromItem":{const i=p.inspecciones.find(x=>x.id===U.sel);const it=chkItems(i.tipo).find(x=>x.id===id);const a=i.resp[id]||{};
       newNC({insp:i.id,item:id,origen:`Inspección ${i.id}`,torre:i.torre,ubic:`${i.ident}, ${i.nivel}`,nota:a.obs||it.t,fotos:(i.fotos||[]).slice()});break;}
     case"newNC":newNC();break;
@@ -217,7 +226,7 @@ document.addEventListener("click",async ev=>{
     case"pdfNC":{const n=p.nc.find(x=>x.id===id);exportPDF(pdfNCHTML(n),fname(p.nombre,"no-conformidad",n.id));break;}
     /* Informes */
     case"genRep":{const tipo=$("nrTipo").value,desde=$("nrDesde").value,hasta=$("nrHasta").value;if(!desde||!hasta||desde>hasta){toast("Revisa las fechas de cobertura.");break;}
-      const rep={id:nextId(p.informes,"INF-"),tipo,desde,hasta,creado:TODAY,flujo:"borrador",txtInsp:"",aspectos:"",txtDoc:"",txtCert:"",txtEns:"",concl:"",fotos:[],avance:tipo==="final"?[]:avanceInicial(p)};
+      const rep={id:nextId(p.informes.filter(r=>r.tipo===tipo),REPP[tipo]),tipo,desde,hasta,creado:TODAY,flujo:"borrador",txtInsp:"",aspectos:"",txtDoc:"",txtCert:"",txtEns:"",concl:"",fotos:[],avance:tipo==="final"?[]:avanceInicial(p)};
       if(tipo!=="semanal")rep.concl=defaultConcl(rep,repData(rep));
       if(tipo==="semanal")rep.aspectos=sugerirAspectos(rep);
       p.informes.push(rep);log(`Informe ${rep.id} generado: ${REPS[tipo]}.`);save();go("informe",rep.id);break;}
@@ -265,17 +274,21 @@ document.addEventListener("click",async ev=>{
     case"changePw":{const me=ME();const o=$("pwOld").value,n1=$("pwNew").value,n2=$("pwNew2").value;if(await hashPass(o,me.salt)!==me.pass){toast("La contraseña actual no es correcta.");break;}
       if(n1.length<6){toast("La nueva contraseña debe tener al menos 6 caracteres.");break;}if(n1!==n2){toast("Las contraseñas no coinciden.");break;}me.pass=await hashPass(n1,me.salt);save();render();toast("Contraseña cambiada.");break;}
     case"backup":{const b=await respaldo();await saveBlob(b,`mi-sti-respaldo-${TODAY}.json`);break;}
-    case"resetYes":{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^mi-sti-ens-/.test(k))ks.push(k);}ks.forEach(k=>localStorage.removeItem(k));
+    case"resetYes":{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^mi-sti-ens-/.test(k))ks.push(k);}ks.forEach(k=>localStorage.removeItem(k));if(U.ensMod){U.ensMod.api.destroy();U.ensMod=null;}
       localStorage.removeItem(LS);await cargarDatos();U.confirm=false;SES={uid:"u0"};saveSes();go("plataforma");toast("Datos de demostración restablecidos.");break;}
   }
 });
 document.addEventListener("change",async ev=>{
   const t=ev.target;const p=P();
-  if(t.id==="restoreIn"){const f=t.files&&t.files[0];t.value="";if(!f)return;try{const j=JSON.parse(await f.text());if(!j.datos||j.datos.v!==1)throw 0;
-      D=j.datos;save();Object.entries(j.ensayos||{}).forEach(([k,v])=>localStorage.setItem(k,v));for(const[k,v]of j.fotos||[]){PH.set(k,v);await IDB.put(k,v).catch(()=>{});}
+  if(t.id==="restoreIn"){const f=t.files&&t.files[0];t.value="";if(!f)return;try{const j=JSON.parse(await f.text());if(!j.datos||!j.datos.v)throw 0;
+      D=j.datos;Object.entries(j.ensayos||{}).forEach(([k,v])=>localStorage.setItem(k,v));for(const[k,v]of j.fotos||[]){PH.set(k,v);await IDB.put(k,v).catch(()=>{});}
+      for(const[k,v]of j.archivos||[]){try{const blob=await (await fetch(v.data)).blob();await ARCH.put(k,{blob,nombre:v.nombre,tipo:v.tipo});}catch(e){}}
+      await migrarDatos();save();
       if(!ME()){logout();}render();toast("Respaldo restaurado.");}catch(e){toast("Ese archivo no es un respaldo válido de Mi STI.");}return;}
   if(!ME())return;
   if(t.dataset.up){const f=t.files&&t.files[0];t.value="";if(f)handleUpload(t.dataset.up,f);}
+  else if(t.dataset.arch){const f=t.files&&t.files[0];t.value="";if(!f)return;const list=t.dataset.arch==="doc"?p.documentos:p.certificados;const rec=list.find(x=>x.id===t.dataset.id);if(!rec)return;
+    try{const old=rec.archivo;rec.archivo=await guardarArchivo(f);if(old)ARCH.del(old.id);log(`Archivo adjuntado a ${rec.id}: ${f.name}.`);save();renderSheet();toast("Archivo adjuntado.");}catch(e){toast("No se pudo guardar el archivo en este navegador.");}}
   else if(t.dataset.photo){const files=[...(t.files||[])];t.value="";if(!files.length)return;const ids=await addPhotos(files);
     if(t.dataset.photo==="reg"){if(ids.length)openSheet("fotoUp",null,{ids});return;}
     const arr=photoTarget(t.dataset.photo);if(arr)arr.push(...ids);save();render();if(ids.length)toast(`${ids.length} foto(s) agregada(s).`);}
@@ -318,7 +331,7 @@ document.addEventListener("drop",ev=>{const d=ev.target.closest("[data-drop]");i
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"){if(!$("lightbox").hidden)$("lightbox").hidden=true;else if(U.sheet)closeSheet();}
   if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches&&ev.target.matches('[role="checkbox"][data-act]')){ev.preventDefault();ev.target.click();}});
 /* Las apps de ensayos guardan en este mismo navegador: al cambiar su resumen se actualiza lo que se ve aquí (sin recargar la app abierta). */
-window.addEventListener("storage",ev=>{if(ev.key&&/^mi-sti-ens-.*-resumen$/.test(ev.key)&&ME()&&P()&&!(U.view==="ensayos"&&U.tabEns!=="resumen"))render();});
+window.addEventListener("storage",ev=>{if(ev.key&&/^mi-sti-ens-.*-resumen$/.test(ev.key)&&ME()&&P()&&U.view!=="ensayos")render();});
 
 (async function init(){
   await cargarDatos();

@@ -9,11 +9,20 @@ function flujoBtns(rec,kind,apLabel){
   return h;
 }
 const elLabel=i=>`${CHK[i.tipo]?.label||i.tipo} · ${i.nivel}, ${i.torre}`;
+function faseStats(i,k){const items=chkItems(i.tipo).filter(it=>it.fase===k);const r=i.resp||{};const c=(i.conf||{})[k]||"";
+  const done=items.filter(it=>r[it.id]&&r[it.id].e).length,nc=items.filter(it=>r[it.id]&&r[it.id].e==="NC"&&!r[it.id].fix).length;
+  return{total:items.length,done,nc,conf:c,listo:items.length>0&&done===items.length&&nc===0};}
 function inspStats(i){const items=chkItems(i.tipo);const r=i.resp||{};
   const st={total:items.length,done:0,nc:0,fix:0,antesT:0,antesD:0};
   items.forEach(it=>{const a=r[it.id];if(it.fase==="antes")st.antesT++;if(a&&a.e){st.done++;if(it.fase==="antes")st.antesD++;if(a.e==="NC"){if(a.fix)st.fix++;else st.nc++;}}});
+  st.fases={};FASES.forEach(([k])=>st.fases[k]=faseStats(i,k));
   st.listo=st.antesD===st.antesT&&st.nc===0;
-  st.estado=st.nc?"correccion":i.conforme?"conforme":"revision";return st;}
+  st.estado=st.nc?"correccion":FASES.every(([k])=>st.fases[k].conf)?"conforme":"revision";return st;}
+/* Datos anteriores: un elemento conforme queda conforme en las fases que tienen todos sus ítems revisados */
+function normInsp(i){if(i.conf)return;i.conf={};const r=i.resp||{};
+  FASES.forEach(([k])=>{const its=chkItems(i.tipo).filter(it=>it.fase===k);i.conf[k]=i.conforme&&its.length&&its.every(it=>r[it.id]&&r[it.id].e)?i.conforme:"";});
+  if(!FASES.every(([k])=>i.conf[k]))i.conforme="";}
+const faseCell=f=>f.conf?`<span class="chip c-good" title="Conforme el ${fd(f.conf)}">✓ ${fd(f.conf).replace(/ \d{4}$/,"")}</span>`:f.nc?`<span class="chip c-crit">Corregir</span>`:f.done?`<span class="muted mono">${f.done}/${f.total}</span>`:'<span class="muted">—</span>';
 const INSP={revision:["En revisión","c-dark"],correccion:["Requiere corrección","c-crit"],conforme:["Conforme","c-good"]};
 const inspChip=k=>`<span class="chip ${INSP[k][1]}">${INSP[k][0]}</span>`;
 const NCE={abierta:["Abierta","c-crit"],respondida:["Respondida","c-y"],cerrada:["Levantada","c-good"]};
@@ -23,8 +32,8 @@ const ncChip=n=>`<span class="chip ${NCE[n.estado][1]}">${NCE[n.estado][0]}</spa
 /* ============================================================
    Estado de la interfaz
    ============================================================ */
-const U={view:"inicio",sel:null,sheet:null,tabInsp:"antes",tabEns:"resumen",busy:null,confirm:false,openItem:{},
-  fi:{desde:"",hasta:"",torre:"",estado:"",q:""},fn:{estado:"",q:""},newRep:{tipo:"semanal"},respDraft:{},
+const U={view:"inicio",sel:null,sheet:null,tabInsp:"antes",tabEns:"concreto",busy:null,confirm:false,openItem:{},
+  fi:{mes:"",torre:"",estado:"",q:""},fn:{estado:"",q:""},newRep:{tipo:"semanal"},respDraft:{},
   ff:{desde:"",hasta:"",torre:"",origen:""},selFotos:[],loginErr:"",fu:{q:"",emp:""}};
 function log(t){const p=P();if(!p)return;p.actividad=p.actividad||[];p.actividad.unshift({f:TODAY,q:who().replace(/^Ing\.\s*/,""),t});p.actividad=p.actividad.slice(0,50);}
 const initials=n=>String(n||"?").replace(/^(Ing|Arq)\.\s*/i,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase();
@@ -89,7 +98,7 @@ function renderFrame(){
   renderAi();
 }
 function render(){
-  if(!ME()){$("app").hidden=true;$("loginRoot").hidden=false;aplicarPaleta(paletaDe(null));$("loginRoot").innerHTML=vLogin();U.sheet=null;renderSheet();return;}
+  if(!ME()){if(U.ensMod){U.ensMod.api.destroy();U.ensMod=null;}$("app").hidden=true;$("loginRoot").hidden=false;aplicarPaleta(paletaDe(null));$("loginRoot").innerHTML=vLogin();U.sheet=null;renderSheet();return;}
   $("loginRoot").hidden=true;$("app").hidden=false;
   if(PROJ_VIEWS.includes(U.view)&&!P())U.view="inicio";
   if(U.view==="plataforma"&&!esOwner())U.view="inicio";
@@ -98,7 +107,7 @@ function render(){
   renderFrame();
   const fn={inicio:vInicio,tablero:vTablero,documentos:vDocumentos,materiales:vMateriales,ensayos:vEnsayos,inspecciones:vInspecciones,inspeccion:vInspeccion,nc:vNC,informes:vInformes,informe:vInforme,fotos:vFotos,proyecto:vProyecto,
     plataforma:vPlataforma,empresa:vEmpresa,usuarios:vUsuarios,proyectos:vProyectos,cuenta:vCuenta}[U.view]||vInicio;
-  $("view").innerHTML=fn();renderSheet();
+  $("view").innerHTML=fn();if(U.view==="ensayos")montarEnsHost();renderSheet();
 }
 function go(view,sel){U.view=view;U.sel=sel||null;U.confirm=false;U.selFotos=[];try{history.replaceState(null,"","#"+view);}catch(e){}render();window.scrollTo({top:0});}
 function abrirProyecto(id){SES.pid=id||null;saveSes();U.selFotos=[];refreshAi();go(id?"tablero":"inicio");}
@@ -154,31 +163,52 @@ function vMateriales(){
   const p=P();const l=p.certificados.filter(visible).slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
   return `<div class="phead"><div><div class="eyebrow">Control de calidad</div><h1>Materiales</h1><p>Certificados de calidad de los materiales que llegan a la obra. Al subir el PDF la app extrae proveedor, material, lote, norma, fecha, cantidad y resultado.</p></div></div>
   ${uploader("cert","Subir certificado de calidad","Se extraen proveedor, material, lote, norma, fecha, cantidad y resultado.")}${busyBox("cert")}
-  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Material</th><th>Proveedor · lote</th><th>Norma</th><th>Fecha</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>${l.map(c=>`<tr class="click" data-act="openCert" data-id="${c.id}"><td class="n">${c.id}</td><td><b>${esc(c.material||"Sin material")}</b><span class="sub">${esc(c.cantidad)}</span></td><td>${esc(c.proveedor)}<span class="sub">${esc(c.lote)}</span></td><td class="n">${esc(c.norma)}</td><td class="n">${fd(c.fecha)}</td><td>${c.resultado?`<span class="chip ${c.resultado==="Cumple"?"c-good":"c-crit"}">${esc(c.resultado)}</span>`:"—"}</td><td>${flujoChip(c.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Sin certificados.</div>'}`;
+  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Material</th><th>Proveedor · lote</th><th>Norma</th><th>Fecha</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>${l.map(c=>`<tr class="click" data-act="openCert" data-id="${c.id}"><td class="n">${c.id}</td><td><b>${esc(c.material||"Sin material")}</b>${c.archivo?` <span class="clipi" title="Con archivo adjunto">${IC.clip}</span>`:""}<span class="sub">${esc(c.cantidad)}</span></td><td>${esc(c.proveedor)}<span class="sub">${esc(c.lote)}</span></td><td class="n">${esc(c.norma)}</td><td class="n">${fd(c.fecha)}</td><td>${c.resultado?`<span class="chip ${c.resultado==="Cumple"?"c-good":"c-crit"}">${esc(c.resultado)}</span>`:"—"}</td><td>${flujoChip(c.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Sin certificados.</div>'}`;
 }
 
 /* ============================================================
    Ensayos: resumen + apps de concreto y mampostería
    ============================================================ */
-function ensResumenHTML(p,rows,conBotones){
-  const tipos=[...new Set(rows.map(r=>r.tl))];
+const ENS_MALOS=["nocumple","prombajo","vencido"];
+function ensResumenHTML(p,rows){
   if(!rows.length)return'<div class="empty">Aún no hay ensayos cargados en este proyecto.</div>';
-  return `<div class="tablewrap"><table><thead><tr><th>Material</th>${Object.values(EST_ENS).map(x=>`<th>${x[0]}</th>`).join("")}<th>Total</th></tr></thead><tbody>${tipos.map(t=>{const l=rows.filter(r=>r.tl===t);return `<tr><td><b>${esc(t)}</b></td>${Object.keys(EST_ENS).map(k=>{const n=l.filter(r=>r.est===k).length;return`<td class="n ${n&&["nocumple","prombajo","vencido"].includes(k)?"lo":""}">${n||"·"}</td>`;}).join("")}<td class="n">${l.length}</td></tr>`;}).join("")}</tbody></table></div>
-  <div class="tablewrap"><table><thead><tr><th>Muestra</th><th>Material</th><th>Ubicación</th><th>Muestreo</th><th>Especificada</th><th>Resultado</th><th>%</th><th>Estado</th>${conBotones?"<th></th>":""}</tr></thead><tbody>
-  ${rows.slice().sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||"")).map(r=>`<tr><td class="n">${esc(r.cod)}</td><td>${esc(r.tl)}</td><td>${esc(r.loc||r.elemento||"")}${r.zona?`<span class="sub">${esc(r.zona)}</span>`:""}</td><td class="n">${fd(r.fecha)}</td><td class="n">${r.fc?f1(r.fc)+" MPa":"—"}</td><td class="n ${r.est==="nocumple"?"lo":""}">${r.base!=null?f1(r.base)+" MPa":"—"}</td><td class="n">${r.ratio!=null?Math.round(r.ratio*100)+" %":"—"}</td><td>${estEnsChip(r.est)}</td>${conBotones?`<td>${["nocumple","prombajo","vencido"].includes(r.est)&&!p.nc.some(n=>n.ensayo===r.app+":"+r.cod)?`<button class="btn small" data-act="ncFromEns" data-k="${esc(r.app)}" data-id="${esc(r.cod)}">${IC.nc} Crear NC</button>`:""}</td>`:""}</tr>`).join("")}</tbody></table></div>`;
+  const tipos=ensTiposDe(p).map(t=>t[0]).filter(k=>rows.some(r=>r.tipo===k));
+  return `<div class="tablewrap"><table class="enssum"><thead><tr><th>Material</th>${Object.values(EST_ENS).map(x=>`<th class="c">${x[0]}</th>`).join("")}<th class="c">Total</th></tr></thead><tbody>${tipos.map(k=>{const l=rows.filter(r=>r.tipo===k);return `<tr class="click" data-act="tabEns" data-v="${k}"><td><b>${esc(ENS_TIPOS.find(t=>t[0]===k)[2])}</b></td>${Object.keys(EST_ENS).map(e=>{const n=l.filter(r=>r.est===e).length;return`<td class="c n ${n&&ENS_MALOS.includes(e)?"lo":""}">${n||"·"}</td>`;}).join("")}<td class="c n"><b>${l.length}</b></td></tr>`;}).join("")}</tbody></table></div>`;
 }
+function ensAccionHTML(p,rows){if(!canEdit())return"";
+  const l=rows.filter(r=>ENS_MALOS.includes(r.est)&&!p.nc.some(n=>n.ensayo===r.app+":"+r.cod||n.muestra===r.cod));
+  if(!l.length)return"";
+  return `<details class="panel ensaccion"><summary><b>Resultados sin no conformidad</b> <span class="muted">${l.length} muestra(s) no cumplen, con promedio bajo o con rotura atrasada</span></summary>
+  <div class="tablewrap"><table><thead><tr><th>Muestra</th><th>Material</th><th>Ubicación</th><th>Resultado</th><th>Estado</th><th></th></tr></thead><tbody>${l.map(r=>`<tr><td class="n">${esc(r.cod)}</td><td>${esc(r.tl)}</td><td>${esc(r.loc||r.elemento||"")}</td><td class="n">${r.base!=null?f1(r.base)+" MPa":"—"}</td><td>${estEnsChip(r.est)}</td><td><button class="btn small" data-act="ncFromEns" data-k="${esc(r.app)}" data-id="${esc(r.cod)}">${IC.nc} Crear NC</button></td></tr>`).join("")}</tbody></table></div></details>`;}
+function ensTabsHTML(p,rows){
+  return `<nav class="tabs enstabs" role="tablist" aria-label="Tipo de ensayo">${ensTiposDe(p).map(([k,,l])=>{const r=rows.filter(x=>x.tipo===k);const nc=r.filter(x=>x.est==="nocumple").length,ve=r.filter(x=>x.est==="vencido").length;
+    return `<button class="tab" role="tab" data-act="tabEns" data-v="${k}" aria-selected="${U.tabEns===k}">${l}<span class="cnt">${r.length}</span>${nc?`<span class="cnt bad">✕ ${nc}</span>`:""}${ve?`<span class="cnt late">⌛ ${ve}</span>`:""}</button>`;}).join("")}</nav>`;}
+function ensTopHTML(p){const R=resumenEns(p);
+  return `${ensResumenHTML(p,R.rows)}${ensAccionHTML(p,R.rows)}${ensTabsHTML(p,R.rows)}`;}
+function ensSoloLectura(p,k){const rows=resumenEns(p).rows.filter(r=>r.tipo===k).sort((a,b)=>(b.fecha||"").localeCompare(a.fecha||""));
+  if(!rows.length)return'<div class="empty">No hay muestras de este tipo.</div>';
+  return `<div class="tablewrap"><table><thead><tr><th>Muestra</th><th>Ubicación</th><th>Muestreo</th><th>Especificada</th><th>Resultado</th><th>%</th><th>Estado</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="n">${esc(r.cod)}</td><td>${esc(r.loc||r.elemento||"")}${r.zona?`<span class="sub">${esc(r.zona)}</span>`:""}</td><td class="n">${fd(r.fecha)}</td><td class="n">${r.fc?f1(r.fc)+" MPa":"—"}</td><td class="n ${r.est==="nocumple"?"lo":""}">${r.base!=null?f1(r.base)+" MPa":"—"}</td><td class="n">${r.ratio!=null?Math.round(r.ratio*100)+" %":"—"}</td><td>${estEnsChip(r.est)}</td></tr>`).join("")}</tbody></table></div>`;}
 function vEnsayos(){
-  const p=P();const apps=ensAppsDe(p);const R=resumenEns(p);
-  const tabs=[["resumen","Resumen"],...(canEdit()?apps.map(a=>[a[0],a[1]]):[])];
-  if(!tabs.some(t=>t[0]===U.tabEns))U.tabEns="resumen";
-  const bad=R.rows.filter(r=>["nocumple","prombajo","vencido"].includes(r.est)).length;
-  let body;
-  if(U.tabEns==="resumen")body=`${R.act?`<p class="muted" style="margin:0;font-size:12.5px">Actualizado el ${fd(R.act)}. ${canEdit()?"Los resultados se cargan en las pestañas de cada material.":""}</p>`:""}${ensResumenHTML(p,R.rows,canEdit())}
-    <p class="muted" style="font-size:12.5px;margin:0">Criterio NSR-10 C.5.6.3.3 para concreto: cada promedio de 3 ensayos consecutivos de la misma clase ≥ f'c y ningún ensayo menor que f'c − 3,5 MPa. Mampostería según NSR-10 Título D.</p>`;
-  else{const a=apps.find(x=>x[0]===U.tabEns);body=`<iframe class="ensframe" title="Ensayos de ${esc(a[1])}" src="${esc(ensURL(p,a[2]))}"></iframe>`;}
-  return `<div class="phead"><div><div class="eyebrow">Control de calidad</div><h1>Ensayos</h1><p>Resultados de laboratorio evaluados con los criterios de aceptación de la NSR-10. Cada proyecto guarda sus propios ensayos; el acta mensual toma el resumen de aquí.</p></div></div>
-  <nav class="tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" data-act="tabEns" data-v="${k}" aria-selected="${U.tabEns===k}">${l}${k==="resumen"?`<span class="cnt ${bad?"bad":""}">${bad||R.rows.length}</span>`:""}</button>`).join("")}</nav>${body}`;
+  const p=P();const tipos=ensTiposDe(p);if(!tipos.some(t=>t[0]===U.tabEns))U.tabEns=tipos[0][0];
+  return `<div class="phead"><div><div class="eyebrow">Control de calidad</div><h1>Ensayos</h1><p>Resultados de laboratorio evaluados con los criterios de aceptación de la NSR-10. El resumen se actualiza con cada muestra; el acta mensual lo toma de aquí.</p></div>
+  <div class="actions"><button class="btn" data-act="pdfEns">${IC.pdf} Exportar PDF</button></div></div>
+  <div id="ensTop">${ensTopHTML(p)}</div>
+  ${canEdit()?`<div id="ensHost" class="enshost"></div>`:ensSoloLectura(p,U.tabEns)}`;
 }
+/* Monta (o recupera) el módulo de ensayos de la pestaña activa sin perder su estado entre renderizados */
+function montarEnsHost(){
+  const slot=$("ensHost");if(!slot)return;const p=P();const t=ENS_TIPOS.find(x=>x[0]===U.tabEns);if(!t)return;const app=t[1];const key=p.id+":"+app;
+  if(U.ensMod&&U.ensMod.key===key){slot.replaceWith(U.ensMod.host);}
+  else{if(U.ensMod)U.ensMod.api.destroy();const host=document.createElement("div");host.id="ensHost";host.className="enshost";slot.replaceWith(host);
+    const api=montarEnsayo(host,app,ctxEns(p,app==="mamposteria"?U.tabEns:null,()=>{const el=$("ensTop");if(el&&U.view==="ensayos"&&P())el.innerHTML=ensTopHTML(P());}));
+    U.ensMod={key,host,api,tab:U.tabEns};}
+  if(app==="mamposteria"&&U.ensMod.tab!==U.tabEns&&U.ensMod.api.setTab){U.ensMod.api.setTab(U.tabEns);U.ensMod.tab=U.tabEns;}
+}
+function pdfEnsHTML(p){const R=resumenEns(p);const tipos=ensTiposDe(p).filter(t=>R.rows.some(r=>r.tipo===t[0]));
+  const sum=`<table><colgroup><col style="width:20%"></colgroup><thead><tr><th>Material</th>${Object.values(EST_ENS).map(x=>`<th>${x[0]}</th>`).join("")}<th>Total</th></tr></thead><tbody>${tipos.map(([k,,l])=>{const r=R.rows.filter(x=>x.tipo===k);return `<tr><td><b>${esc(l)}</b></td>${Object.keys(EST_ENS).map(e=>`<td>${r.filter(x=>x.est===e).length||"·"}</td>`).join("")}<td><b>${r.length}</b></td></tr>`;}).join("")}</tbody></table>`;
+  return hdrHTML("Control de ensayos de laboratorio",R.act?`Actualizado el ${fd(R.act)}`:"")+`<h2>Resumen</h2>${R.rows.length?sum:"<p>Sin ensayos.</p>"}`+tipos.map(([k,,l])=>{const rows=R.rows.filter(x=>x.tipo===k).sort((a,b)=>(a.fecha||"").localeCompare(b.fecha||""));
+    return `<h2>${esc(l)} · ${rows.length} muestra(s)</h2><table><colgroup><col style="width:9%"><col><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:7%"><col style="width:16%"></colgroup><thead><tr><th>Muestra</th><th>Ubicación</th><th>Muestreo</th><th>Especificada</th><th>Resultado</th><th>%</th><th>Estado</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.cod)}</td><td>${esc(r.loc||r.elemento||"")}</td><td>${fd(r.fecha)}</td><td>${r.fc?f1(r.fc)+" MPa":"—"}</td><td class="${r.est==="nocumple"?"st-nc":""}">${r.base!=null?f1(r.base)+" MPa":"—"}</td><td>${r.ratio!=null?Math.round(r.ratio*100)+" %":"—"}</td><td class="${["cumple","aprobada"].includes(r.est)?"st-ok":ENS_MALOS.includes(r.est)?"st-nc":""}">${esc((EST_ENS[r.est]||[r.est])[0])}</td></tr>`).join("")}</tbody></table>`;}).join("")
+    +`<p style="font-size:10.5px;color:#555;margin-top:10px">Criterio NSR-10 C.5.6.3.3 para concreto: cada promedio de 3 ensayos consecutivos de la misma clase ≥ f'c y ningún ensayo menor que f'c − 3,5 MPa (f'c ≤ 35 MPa). Mampostería según NSR-10 Título D.</p>`+firmasHTML();}
 
 function uploader(kind,label,hint,sel){
   if(!canEdit())return"";
@@ -195,13 +225,13 @@ function vDocumentos(){
   ${busyBox("doc")}
   ${cats.map(c=>{const l=docs.filter(d=>catOf(d)===c);if(!l.length)return"";return `<section class="panel"><header><h2>${c}</h2><span class="muted">${l.length}</span></header><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Versión</th><th>Fecha</th><th>Vence</th><th>Revisión de contenido</th><th>Estado</th></tr></thead><tbody>
     ${l.map(d=>{const rv=d.rev||[];const okN=rv.filter(i=>i.est==="ok").length;const vz=d.vence?days(TODAY,d.vence):null;
-      return `<tr class="click" data-act="openDoc" data-id="${d.id}"><td><b>${esc(d.nombre)}</b><span class="sub">${esc(DOC_TIPOS[d.tipo]||"")}</span></td><td class="n">v${esc(d.version)}</td><td class="n">${fd(d.fecha)}</td><td class="n ${vz!=null&&vz<=45?"lo":""}">${d.vence?fd(d.vence):"—"}</td><td>${rv.length?`<span class="chip ${okN===rv.length?"c-good":"c-warn"}">${okN}/${rv.length} completos</span>`:'<span class="muted">No aplica</span>'}</td><td>${flujoChip(d.flujo)}</td></tr>`;}).join("")}</tbody></table></div></section>`;}).join("")||'<div class="empty">Aún no hay documentos.</div>'}`;
+      return `<tr class="click" data-act="openDoc" data-id="${d.id}"><td><b>${esc(d.nombre)}</b>${d.archivo?` <span class="clipi" title="Con archivo adjunto">${IC.clip}</span>`:""}<span class="sub">${esc(DOC_TIPOS[d.tipo]||"")}</span></td><td class="n">v${esc(d.version)}</td><td class="n">${fd(d.fecha)}</td><td class="n ${vz!=null&&vz<=45?"lo":""}">${d.vence?fd(d.vence):"—"}</td><td>${rv.length?`<span class="chip ${okN===rv.length?"c-good":"c-warn"}">${okN}/${rv.length} completos</span>`:'<span class="muted">No aplica</span>'}</td><td>${flujoChip(d.flujo)}</td></tr>`;}).join("")}</tbody></table></div></section>`;}).join("")||'<div class="empty">Aún no hay documentos.</div>'}`;
 }
 function sheetDoc(d){
   const rv=d.rev||[];const ed=canEdit()&&d.flujo!=="aprobado";
   const keys=d.tipo==="licencia"?[...new Set([...LIC_KEYS,...Object.keys(d.datos||{})])]:[...new Set([...GEN_KEYS,...Object.keys(d.datos||{})])];
   return {title:d.nombre,sub:`${DOC_TIPOS[d.tipo]||"Documento"} · v${esc(d.version)} · ${fd(d.fecha)}`,
-  body:`${viaNote(d)}<div>${flujoChip(d.flujo)}</div>
+  body:`${viaNote(d)}<div>${flujoChip(d.flujo)}</div>${archivoHTML(d,"doc",canEdit())}
   ${ed?`<section class="form"><label class="full">Nombre<input type="text" id="docNom" value="${esc(d.nombre)}"></label><label>Tipo<select id="docTipo">${Object.entries(DOC_TIPOS).map(([k,v])=>`<option value="${k}" ${k===d.tipo?"selected":""}>${v}</option>`).join("")}</select></label><label>Versión<input type="text" id="docVer" value="${esc(d.version)}"></label><label>Fecha<input type="date" id="docFecha" value="${esc(d.fecha||"")}"></label><label>Vence<input type="date" id="docVence" value="${esc(d.vence||"")}"></label></section>`:""}
   <section><h3 style="margin-bottom:8px">Información principal</h3>
   ${ed?`<div class="form">${keys.map(k=>`<label class="${k==="Resumen"||k==="Título"?"full":""}">${esc(k)}${k==="Resumen"?`<textarea data-dato="${esc(k)}">${esc(d.datos?.[k]||"")}</textarea>`:`<input type="text" data-dato="${esc(k)}" value="${esc(d.datos?.[k]||"")}">`}</label>`).join("")}</div>`
@@ -216,45 +246,56 @@ function sheetDoc(d){
   foot:`<button class="btn" data-act="pdfDoc" data-id="${d.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveDoc" data-id="${d.id}">Guardar</button>`:""}${flujoBtns(d,"doc")}`};
 }
 function pdfDocHTML(d){
-  return hdrHTML("Ficha de documento",DOC_TIPOS[d.tipo])+`<h2>Documento</h2><table><tbody><tr><th>Nombre</th><td style="white-space:normal">${esc(d.nombre)}</td></tr><tr><th>Tipo</th><td>${esc(DOC_TIPOS[d.tipo])}</td></tr><tr><th>Versión</th><td>${esc(d.version)}</td></tr><tr><th>Fecha</th><td>${fd(d.fecha)}</td></tr>${d.vence?`<tr><th>Vence</th><td>${fd(d.vence)}</td></tr>`:""}<tr><th>Estado</th><td>${FLUJO[d.flujo||"borrador"][0]}</td></tr></tbody></table>
-  <h2>Información principal</h2><table class="wrap"><tbody>${Object.entries(d.datos||{}).filter(([k,v])=>v).map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")||"<tr><td>Sin datos</td></tr>"}</tbody></table>
-  ${(d.rev||[]).length?`<h2>Revisión de contenido mínimo · ${REV[d.tipo].label}</h2><table class="wrap"><thead><tr><th>Ítem</th><th>Resultado</th><th>Pág.</th><th>Observación</th></tr></thead><tbody>${d.rev.map(it=>`<tr><td>${esc(it.t)}</td><td class="${it.est==="ok"?"st-ok":"st-nc"}">${it.est==="ok"?"Encontrado":it.est==="inc"?"Incompleto":"Ausente"}</td><td>${esc(it.pag||"")}</td><td>${esc(it.obs||"")}</td></tr>`).join("")}</tbody></table>`:""}${firmasHTML()}`;
+  return hdrHTML("Ficha de documento",DOC_TIPOS[d.tipo])+`<h2>Documento</h2><table><colgroup><col style="width:26%"><col></colgroup><tbody><tr><th>Nombre</th><td style="white-space:normal">${esc(d.nombre)}</td></tr><tr><th>Tipo</th><td>${esc(DOC_TIPOS[d.tipo])}</td></tr><tr><th>Versión</th><td>${esc(d.version)}</td></tr><tr><th>Fecha</th><td>${fd(d.fecha)}</td></tr>${d.vence?`<tr><th>Vence</th><td>${fd(d.vence)}</td></tr>`:""}<tr><th>Estado</th><td>${FLUJO[d.flujo||"borrador"][0]}</td></tr><tr><th>Archivo adjunto</th><td>${d.archivo?esc(d.archivo.nombre):"Sin archivo"}</td></tr></tbody></table>
+  <h2>Información principal</h2><table class="wrap"><colgroup><col style="width:26%"><col></colgroup><tbody>${Object.entries(d.datos||{}).filter(([k,v])=>v).map(([k,v])=>`<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")||"<tr><td>Sin datos</td></tr>"}</tbody></table>
+  ${(d.rev||[]).length?`<h2>Revisión de contenido mínimo · ${REV[d.tipo].label}</h2><table class="wrap"><colgroup><col style="width:40%"><col style="width:14%"><col style="width:8%"><col></colgroup><thead><tr><th>Ítem</th><th>Resultado</th><th>Pág.</th><th>Observación</th></tr></thead><tbody>${d.rev.map(it=>`<tr><td>${esc(it.t)}</td><td class="${it.est==="ok"?"st-ok":"st-nc"}">${it.est==="ok"?"Encontrado":it.est==="inc"?"Incompleto":"Ausente"}</td><td>${esc(it.pag||"")}</td><td>${esc(it.obs||"")}</td></tr>`).join("")}</tbody></table>`:""}${firmasHTML()}`;
 }
 function sheetCert(c){const ed=canEdit()&&c.flujo!=="aprobado";const dis=ed?"":"disabled";
   return{title:`${c.id} · ${c.material||"Certificado"}`,sub:`${esc(c.proveedor)} · ${fd(c.fecha)}`,
-  body:`${viaNote(c)}<div>${flujoChip(c.flujo)}</div>
+  body:`${viaNote(c)}<div>${flujoChip(c.flujo)}</div>${archivoHTML(c,"cert",canEdit())}
   <section class="form"><label class="full">Material<input type="text" id="cMat" value="${esc(c.material)}" ${dis}></label><label>Proveedor<input type="text" id="cProv" value="${esc(c.proveedor)}" ${dis}></label><label>Lote o colada<input type="text" id="cLote" value="${esc(c.lote)}" ${dis}></label><label>Norma<input type="text" id="cNorma" value="${esc(c.norma)}" ${dis}></label><label>Cantidad<input type="text" id="cCant" value="${esc(c.cantidad)}" ${dis}></label><label>Fecha<input type="date" id="cFecha" value="${esc(c.fecha)}" ${dis}></label><label>Resultado<select id="cRes" ${dis}>${["","Cumple","No cumple"].map(v=>`<option ${v===c.resultado?"selected":""} value="${v}">${v||"Sin dato"}</option>`).join("")}</select></label></section>
   ${c._text?`<details class="raw"><summary>Ver el texto leído del archivo</summary><pre>${esc(c._text.slice(0,5000))}</pre></details>`:""}`,
   foot:`<button class="btn" data-act="pdfCert" data-id="${c.id}">${IC.pdf} PDF</button>${ed?`<button class="btn" data-act="saveCert" data-id="${c.id}">Guardar</button>`:""}${flujoBtns(c,"cert")}`};}
 /* ============================================================
    Inspecciones
    ============================================================ */
-function inspFiltradas(){const f=U.fi;const q=f.q.trim().toLowerCase();
-  return P().inspecciones.map(i=>({i,s:inspStats(i)})).filter(({i,s})=>(!f.desde||i.fecha>=f.desde)&&(!f.hasta||i.fecha<=f.hasta)&&(!f.torre||i.torre===f.torre)&&(!f.estado||s.estado===f.estado)&&(!q||(elLabel(i)+" "+i.ident+" "+i.id).toLowerCase().includes(q))).sort((a,b)=>b.i.fecha.localeCompare(a.i.fecha)||b.i.id.localeCompare(a.i.id));}
+const MESES_L=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const mesTxt=m=>{const[y,n]=m.split("-");const t=MESES_L[+n-1]+" "+y;return t[0].toUpperCase()+t.slice(1);};
+function inspFiltradas(){const f=U.fi;const q=(f.q||"").trim().toLowerCase();
+  return P().inspecciones.map(i=>({i,s:inspStats(i)})).filter(({i,s})=>(!f.mes||i.fecha.slice(0,7)===f.mes)&&(!f.torre||i.torre===f.torre)&&(!f.estado||s.estado===f.estado)&&(!q||(elLabel(i)+" "+i.ident+" "+i.id+" "+i.nivel).toLowerCase().includes(q))).sort((a,b)=>b.i.fecha.localeCompare(a.i.fecha)||b.i.id.localeCompare(a.i.id));}
+function inspTablaHTML(l){const g=new Map();l.forEach(x=>{const m=x.i.fecha.slice(0,7);if(!g.has(m))g.set(m,[]);g.get(m).push(x);});
+  return `<div class="tablewrap"><table class="insptable"><thead><tr><th>No.</th><th>Fecha</th><th>Elemento</th><th>Torre · nivel</th><th>Identificación</th>${FASES.map(([k,l])=>`<th class="c">${l.replace(" del vaciado","")}</th>`).join("")}<th>Estado</th><th class="c">Fotos</th></tr></thead><tbody>
+  ${[...g.entries()].map(([m,rows])=>`<tr class="grp"><td colspan="${7+FASES.length}"><b>${mesTxt(m)}</b> · ${rows.length} inspección(es) · ${rows.filter(x=>x.s.estado==="conforme").length} conforme(s)</td></tr>
+    ${rows.map(({i,s})=>`<tr class="click" data-act="goto" data-v="inspeccion" data-id="${i.id}"><td class="n">${i.id}</td><td class="n">${fd(i.fecha)}</td><td><b>${esc(CHK[i.tipo]?.label||i.tipo)}</b></td><td>${esc(i.torre)}<span class="sub">${esc(i.nivel)}</span></td><td>${esc(i.ident)}${s.nc?`<span class="sub lo">${s.nc} ítem(s) por corregir</span>`:s.fix?`<span class="sub">${s.fix} corregido(s)</span>`:""}</td>${FASES.map(([k])=>`<td class="c">${faseCell(s.fases[k])}</td>`).join("")}<td>${inspChip(s.estado)}</td><td class="c n">${(i.fotos||[]).length||"—"}</td></tr>`).join("")}`).join("")}</tbody></table></div>`;}
 function vInspecciones(){
-  const p=P();const l=inspFiltradas();const f=U.fi;
-  return `<div class="phead"><div><div class="eyebrow">Proceso constructivo</div><h1>Inspecciones</h1><p>Revisión de cada elemento antes, durante y después del vaciado, con fotos. Un ítem que no cumple deja el elemento en «Requiere corrección» hasta verificar que se corrigió.</p></div>
-  ${canEdit()?`<div class="actions"><button class="btn primary" data-act="newInsp">${IC.chk} Nueva inspección</button></div>`:""}</div>
-  <div class="filters"><label>Desde<input type="date" data-fi="desde" value="${f.desde}"></label><label>Hasta<input type="date" data-fi="hasta" value="${f.hasta}"></label>
+  const p=P();const l=inspFiltradas();const f=U.fi;const meses=[...new Set(p.inspecciones.map(i=>i.fecha.slice(0,7)))].sort().reverse();
+  return `<div class="phead"><div><div class="eyebrow">Proceso constructivo</div><h1>Inspecciones</h1><p>Revisión de cada elemento antes, durante y después del vaciado, con fotos. Cada fase se declara conforme por separado; el elemento queda conforme cuando las tres lo están.</p></div>
+  <div class="actions"><button class="btn" data-act="pdfInspList" ${l.length?"":"disabled"}>${IC.pdf} Exportar PDF</button>${canEdit()?`<button class="btn primary" data-act="newInsp">${IC.chk} Nueva inspección</button>`:""}</div></div>
+  <div class="filters"><label>Mes<select data-fi="mes"><option value="">Todos los meses</option>${meses.map(m=>`<option value="${m}" ${m===f.mes?"selected":""}>${mesTxt(m)}</option>`).join("")}</select></label>
   <label>Torre o bloque<select data-fi="torre"><option value="">Todas</option>${(p.torres||[]).map(t=>`<option ${t===f.torre?"selected":""}>${esc(t)}</option>`).join("")}</select></label>
   <label>Estado<select data-fi="estado"><option value="">Todos</option>${Object.entries(INSP).map(([k,v])=>`<option value="${k}" ${k===f.estado?"selected":""}>${v[0]}</option>`).join("")}</select></label>
-  <label style="flex:1;min-width:160px">Buscar<input type="text" data-fi="q" value="${esc(f.q)}" placeholder="Columnas, piso 3…" style="width:100%"></label>
-  ${f.desde||f.hasta||f.torre||f.estado||f.q?'<button class="btn small" data-act="clearFi">Limpiar</button>':""}<span class="muted" style="font-size:12.5px">${l.length} de ${p.inspecciones.length}</span></div>
-  ${l.length?`<div class="cards">${l.map(({i,s})=>{const pc=n=>(n/s.total*100).toFixed(1)+"%";const th=(i.fotos||[]).filter(id=>PH.has(id)).slice(0,4);
-    return `<button class="card" data-act="goto" data-v="inspeccion" data-id="${i.id}"><span class="eyebrow">${esc(i.torre)} · ${esc(i.nivel)} · ${fd(i.fecha)} · ${i.id}</span><h3>${esc(CHK[i.tipo]?.label||i.tipo)}</h3><div class="meta"><span>${esc(i.ident)}</span></div><div class="meta"><span>${s.done}/${s.total} ítems</span>${s.nc?`<span class="lo">${s.nc} por corregir</span>`:""}${s.fix?`<span>${s.fix} corregido(s)</span>`:""}${(i.fotos||[]).length?`<span>${i.fotos.length} foto(s)</span>`:""}</div><div class="chips">${inspChip(s.estado)}</div>
-    ${th.length?`<div class="thumbs">${th.map(id=>`<img src="${PH.get(id)}" alt="">`).join("")}</div>`:""}
-    <div class="bar"><i style="width:${pc(s.done-s.nc-s.fix)};background:var(--good)"></i><i style="width:${pc(s.fix)};background:var(--y)"></i><i style="width:${pc(s.nc)};background:var(--crit)"></i></div></button>`;}).join("")}</div>`:'<div class="empty">No hay inspecciones con esos filtros.</div>'}`;
+  <label style="flex:1;min-width:160px">Buscar<input type="text" data-fi="q" value="${esc(f.q||"")}" placeholder="Columnas, piso 3…" style="width:100%"></label>
+  ${f.mes||f.torre||f.estado||f.q?'<button class="btn small" data-act="clearFi">Limpiar</button>':""}<span class="muted" style="font-size:12.5px">${l.length} de ${p.inspecciones.length}</span></div>
+  ${l.length?inspTablaHTML(l):'<div class="empty">No hay inspecciones con esos filtros.</div>'}`;
 }
+function pdfInspListHTML(l){const f=U.fi;const g=new Map();l.slice().reverse().forEach(x=>{const m=x.i.fecha.slice(0,7);if(!g.has(m))g.set(m,[]);g.get(m).push(x);});
+  const fc=fz=>fz.conf?"Conforme "+fd(fz.conf):fz.nc?"Corregir":fz.done?fz.done+"/"+fz.total:"—";
+  return hdrHTML("Control de inspecciones",f.mes?mesTxt(f.mes):"Todas las inspecciones")+[...g.entries()].map(([m,rows])=>`<h2>${mesTxt(m)} · ${rows.length} inspección(es)</h2><table><colgroup><col style="width:8%"><col style="width:11%"><col style="width:15%"><col style="width:14%"><col><col style="width:10%"><col style="width:10%"><col style="width:10%"></colgroup><thead><tr><th>No.</th><th>Fecha</th><th>Elemento</th><th>Torre · nivel</th><th>Identificación</th><th>Antes</th><th>Durante</th><th>Después</th></tr></thead><tbody>${rows.map(({i,s})=>`<tr><td>${i.id}</td><td>${fd(i.fecha)}</td><td>${esc(CHK[i.tipo]?.label||i.tipo)}</td><td>${esc(i.torre)} · ${esc(i.nivel)}</td><td>${esc(i.ident)}${s.nc?` · ${s.nc} por corregir`:""}</td>${FASES.map(([k])=>`<td class="${s.fases[k].conf?"st-ok":s.fases[k].nc?"st-nc":""}">${fc(s.fases[k])}</td>`).join("")}</tr>`).join("")}</tbody></table>`).join("")+firmasHTML();}
 function vInspeccion(){
   const i=P().inspecciones.find(x=>x.id===U.sel);if(!i)return vInspecciones();
   const s=inspStats(i);const items=chkItems(i.tipo);const r=i.resp||(i.resp={});const ed=canEdit();
   const f=U.tabInsp;const cnt=k=>{const l=items.filter(it=>it.fase===k);return `${l.filter(it=>r[it.id]&&r[it.id].e).length}/${l.length}`;};
   const ncOpen=k=>items.filter(it=>it.fase===k&&r[it.id]&&r[it.id].e==="NC"&&!r[it.id].fix).length;
   return `<div class="phead"><div><button class="link" data-act="nav" data-v="inspecciones">← Inspecciones</button><div class="eyebrow" style="margin-top:8px">${esc(i.torre)} · ${esc(i.nivel)} · ${fd(i.fecha)} · ${i.id}</div><h1>${esc(CHK[i.tipo]?.label||i.tipo)}</h1><p>${esc(i.ident)} · ${inspChip(s.estado)}</p></div>
-  <div class="actions"><button class="btn" data-act="pdfInsp" data-id="${i.id}">${IC.pdf} Exportar PDF</button>${ed&&!i.conforme?`<button class="btn primary" data-act="conforme" data-id="${i.id}" ${s.listo?"":"disabled"}>Declarar conforme</button>`:""}${ed&&i.conforme&&canApprove()?`<button class="btn" data-act="reabrirInsp" data-id="${i.id}">Reabrir</button>`:""}</div></div>
-  ${i.conforme?`<div class="note ok">Elemento revisado y conforme el ${fd(i.conforme)}.</div>`:s.nc?`<div class="note bad">El elemento requiere corrección: ${s.nc} ítem(s) no cumplen. Cuando el constructor corrija, verifica en obra y márcalos como corregidos.</div>`:!s.listo?`<div class="note y">Faltan ${s.antesT-s.antesD} ítem(s) por revisar antes del vaciado.</div>`:ed?`<div class="note y">Todos los ítems previos cumplen. Puedes declarar el elemento conforme.</div>`:""}
+  <div class="actions"><button class="btn" data-act="pdfInsp" data-id="${i.id}">${IC.pdf} Exportar PDF</button></div></div>
+  ${s.estado==="conforme"?`<div class="note ok">Elemento conforme en las tres fases (${FASES.map(([k,l])=>`${l.toLowerCase()}: ${fd(s.fases[k].conf)}`).join(" · ")}).</div>`:s.nc?`<div class="note bad">El elemento requiere corrección: ${s.nc} ítem(s) no cumplen. Cuando el constructor corrija, verifica en obra y márcalos como corregidos.</div>`:""}
+  <div class="fasesbar">${FASES.map(([k,l])=>{const fz=s.fases[k];return `<div class="fase ${fz.conf?"ok":fz.nc?"bad":""}"><span class="eyebrow">${l}</span><b>${fz.conf?"Conforme":fz.nc?"Requiere corrección":fz.done===fz.total?"Lista para declarar":"En revisión"}</b><span class="sub">${fz.conf?fd(fz.conf):`${fz.done}/${fz.total} ítems`}</span></div>`;}).join("")}</div>
   <section class="panel"><header><h2>Fotos del elemento</h2><span class="muted">${(i.fotos||[]).length}</span></header>${photosHTML(i.fotos,"insp:"+i.id,ed,ed)}</section>
-  <nav class="tabs" role="tablist">${FASES.map(([k,l])=>`<button class="tab" role="tab" data-act="tabInsp" data-v="${k}" aria-selected="${f===k}">${l}<span class="cnt ${ncOpen(k)?"bad":""}">${cnt(k)}</span></button>`).join("")}</nav>
+  <nav class="tabs" role="tablist">${FASES.map(([k,l])=>`<button class="tab" role="tab" data-act="tabInsp" data-v="${k}" aria-selected="${f===k}">${l}${s.fases[k].conf?'<span class="cnt ok">✓</span>':`<span class="cnt ${ncOpen(k)?"bad":""}">${cnt(k)}</span>`}</button>`).join("")}</nav>
+  ${(()=>{const fz=s.fases[f];const lbl=FASES.find(x=>x[0]===f)[1];
+    if(fz.conf)return `<div class="note ok fasenote"><span>${lbl}: conforme el ${fd(fz.conf)}.</span>${ed&&canApprove()?`<button class="btn small" data-act="reabrirFase" data-id="${i.id}" data-v="${f}">Reabrir esta fase</button>`:""}</div>`;
+    if(!ed)return "";
+    return `<div class="note ${fz.listo?"ok":"y"} fasenote"><span>${fz.listo?`Todos los ítems de «${lbl.toLowerCase()}» cumplen o están corregidos.`:fz.nc?`Hay ${fz.nc} ítem(s) por corregir en esta fase.`:`Faltan ${fz.total-fz.done} ítem(s) por revisar en esta fase.`}</span><button class="btn small primary" data-act="confFase" data-id="${i.id}" data-v="${f}" ${fz.listo?"":"disabled"}>Declarar conforme · ${esc(lbl.toLowerCase())}</button></div>`;})()}
   <div class="items">${items.filter(it=>it.fase===f).map(it=>{const a=r[it.id]||{};const open=U.openItem[it.id]||(a.e==="NC"&&!a.fix);const cls=a.e==="NC"&&a.fix?"FX":a.e||"";const nc=P().nc.find(n=>n.insp===i.id&&n.item===it.id);
     return `<article class="item ${cls}"><span class="nn">${it.n}</span><div>${esc(it.t)}${a.obs&&!open?`<span class="sub">${esc(a.obs)}</span>`:""}${a.e==="NC"&&a.fix?`<span class="sub">Corregido y verificado el ${fd(a.fix)}</span>`:""}</div>
     <div class="ans" role="group" aria-label="Resultado del ítem ${it.n}">${["C","NC","NA"].map(v=>`<button class="b${v}" data-act="ans" data-id="${it.id}" data-v="${v}" aria-pressed="${a.e===v}" ${ed?"":"disabled"}>${v==="C"?"Cumple":v==="NC"?"No cumple":"N.A."}</button>`).join("")}<button data-act="toggleItem" data-id="${it.id}" aria-label="Observación">${open?"−":"+"}</button></div>
@@ -266,8 +307,8 @@ function vInspeccion(){
 }
 function pdfInspHTML(i){
   const s=inspStats(i);const items=chkItems(i.tipo);const r=i.resp||{};
-  return hdrHTML("Registro de inspección",`${i.id} · ${fd(i.fecha)}`)+`<h2>Elemento</h2><table><tbody><tr><th>Elemento</th><td>${esc(CHK[i.tipo]?.label)}</td><th>Fecha</th><td>${fd(i.fecha)}</td></tr><tr><th>Torre / nivel</th><td>${esc(i.torre)} · ${esc(i.nivel)}</td><th>Estado</th><td class="${s.estado==="conforme"?"st-ok":s.estado==="correccion"?"st-nc":""}">${INSP[s.estado][0]}${i.conforme?" · "+fd(i.conforme):""}</td></tr><tr><th>Identificación</th><td colspan="3" style="white-space:normal">${esc(i.ident)}</td></tr></tbody></table>
-  ${FASES.map(([k,l])=>{const its=items.filter(it=>it.fase===k);return `<h2>${l}</h2><table class="wrap"><thead><tr><th style="width:5%">No.</th><th>Ítem</th><th style="width:13%">Resultado</th><th style="width:36%">Observación</th></tr></thead><tbody>${its.map(it=>{const a=r[it.id]||{};return `<tr><td>${it.n}</td><td>${esc(it.t)}</td><td class="${a.e==="C"||a.fix?"st-ok":a.e==="NC"?"st-nc":""}">${a.e==="C"?"Cumple":a.e==="NC"?(a.fix?"Corregido":"No cumple"):a.e==="NA"?"N.A.":"—"}</td><td>${esc(a.obs||"")}${a.fix?` (verificado ${fd(a.fix)})`:""}</td></tr>`;}).join("")}</tbody></table>`;}).join("")}
+  return hdrHTML("Registro de inspección",`${i.id} · ${fd(i.fecha)}`)+`<h2>Elemento</h2><table><tbody><tr><th>Elemento</th><td>${esc(CHK[i.tipo]?.label)}</td><th>Fecha</th><td>${fd(i.fecha)}</td></tr><tr><th>Torre / nivel</th><td>${esc(i.torre)} · ${esc(i.nivel)}</td><th>Estado</th><td class="${s.estado==="conforme"?"st-ok":s.estado==="correccion"?"st-nc":""}">${INSP[s.estado][0]}${s.estado==="conforme"&&i.conforme?" · "+fd(i.conforme):""}</td></tr><tr><th>Identificación</th><td colspan="3" style="white-space:normal">${esc(i.ident)}</td></tr></tbody></table>
+  ${FASES.map(([k,l])=>{const its=items.filter(it=>it.fase===k);const fz=s.fases[k];return `<h2>${l} · ${fz.conf?"conforme el "+fd(fz.conf):fz.nc?"requiere corrección":"en revisión"}</h2><table class="wrap"><thead><tr><th style="width:5%">No.</th><th>Ítem</th><th style="width:13%">Resultado</th><th style="width:36%">Observación</th></tr></thead><tbody>${its.map(it=>{const a=r[it.id]||{};return `<tr><td>${it.n}</td><td>${esc(it.t)}</td><td class="${a.e==="C"||a.fix?"st-ok":a.e==="NC"?"st-nc":""}">${a.e==="C"?"Cumple":a.e==="NC"?(a.fix?"Corregido":"No cumple"):a.e==="NA"?"N.A.":"—"}</td><td>${esc(a.obs||"")}${a.fix?` (verificado ${fd(a.fix)})`:""}</td></tr>`;}).join("")}</tbody></table>`;}).join("")}
   ${i.obs?`<h2>Observaciones generales</h2><p>${esc(i.obs)}</p>`:""}
   ${(i.fotos||[]).length?`<h2>Registro fotográfico</h2>${photosPDF(i.fotos,"Foto")}`:""}${firmasHTML()}`;
 }
@@ -351,6 +392,8 @@ function vFotos(){
    ============================================================ */
 const REPT={semanal:"Informe semanal de supervisión técnica",mensual:"Acta mensual de supervisión técnica",final:"Certificación técnica de ocupación"};
 const REPS={semanal:"Informe semanal",mensual:"Acta mensual",final:"Certificación técnica"};
+const REPP={semanal:"IS-",mensual:"AM-",final:"CTO-"};
+const repNo=r=>`${REPS[r.tipo]} No. ${parseInt(String(r.id).replace(/^\D+/,""),10)||1}`;
 function defRange(tipo){
   if(tipo==="semanal")return{desde:addD(TODAY,-6),hasta:TODAY};
   if(tipo==="mensual")return{desde:TODAY.slice(0,8)+"01",hasta:TODAY};
@@ -420,7 +463,7 @@ function repHTML(rep){
     ${H("Resumen de controles")}<table><tbody><tr><th>Elementos conformes</th><td>${p.inspecciones.filter(i=>i.conforme).length} de ${p.inspecciones.length}</td></tr><tr><th>Ensayos de resistencia evaluados</th><td>${R.ens.length}</td></tr><tr><th>Certificados de materiales aprobados</th><td>${R.certs.length}</td></tr><tr><th>No conformidades levantadas / abiertas</th><td>${p.nc.filter(n=>n.flujo==="aprobado"&&n.estado==="cerrada").length} / ${R.ncA.length}</td></tr></tbody></table>
     ${H("Certificación")}<p class="lead">${esc(rep.concl||defaultConcl(rep,R))}</p><p>Declaro bajo la gravedad de juramento que no me encuentro incurso en las incompatibilidades del Título I de la NSR-10.</p>`;
   }
-  return hdrHTML(REPT[rep.tipo],`${rep.id}`,`<b>Periodo:</b> ${per}`)+body+firmasHTML();
+  return hdrHTML(REPT[rep.tipo],`No. ${parseInt(String(rep.id).replace(/^\D+/,""),10)||1}`,`<b>Periodo:</b> ${per}`)+body+firmasHTML();
 }
 function vInformes(){
   const p=P();const l=p.informes.filter(visible).slice().sort((a,b)=>b.creado.localeCompare(a.creado)||b.id.localeCompare(a.id));const nr=U.newRep;
@@ -431,7 +474,7 @@ function vInformes(){
     <label>Cobertura desde<input type="date" id="nrDesde" value="${nr.desde}"></label><label>Hasta<input type="date" id="nrHasta" value="${nr.hasta}"></label>
     <button class="btn primary" data-act="genRep">${IC.rep} Generar informe</button></div></section>`:""}
   <section class="panel"><header><h2>Informes generados</h2><span class="muted">${l.length}</span></header>
-  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Tipo</th><th>Cobertura</th><th>Generado</th><th>Estado</th></tr></thead><tbody>${l.map(r=>`<tr class="click" data-act="goto" data-v="informe" data-id="${r.id}"><td class="n">${r.id}</td><td><b>${REPS[r.tipo]}</b></td><td class="n">${fd(r.desde)} – ${fd(r.hasta)}</td><td class="n">${fd(r.creado)}</td><td>${flujoChip(r.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Aún no hay informes.</div>'}</section>`;
+  ${l.length?`<div class="tablewrap"><table><thead><tr><th>No.</th><th>Tipo</th><th>Cobertura</th><th>Generado</th><th>Estado</th></tr></thead><tbody>${l.map(r=>`<tr class="click" data-act="goto" data-v="informe" data-id="${r.id}"><td class="n">${parseInt(String(r.id).replace(/^\D+/,""),10)||1}</td><td><b>${REPS[r.tipo]}</b></td><td class="n">${fd(r.desde)} – ${fd(r.hasta)}</td><td class="n">${fd(r.creado)}</td><td>${flujoChip(r.flujo)}</td></tr>`).join("")}</tbody></table></div>`:'<div class="empty">Aún no hay informes.</div>'}</section>`;
 }
 const secH=(n,t,sub)=>`<header><h2><span class="secnum">${n}</span>${t}</h2>${sub?`<span class="muted" style="font-size:12.5px">${sub}</span>`:""}</header>`;
 function avEditor(rep,ed){const l=rep.avance||[];
@@ -456,7 +499,7 @@ function vInforme(){
     ${fotosPanel(5)}
     <section class="panel">${secH(6,"Conclusiones")}${ta("concl","Conclusiones y recomendaciones",5)}${ed?`<div class="actions"><button class="btn small ai" data-act="aiConcl" data-id="${rep.id}">${IC.spark} Redactar con IA</button></div>`:""}</section>`;
   else sec=`<section class="panel">${secH(1,"Certificación")}${ta("concl","Texto de la certificación",6)}${ed?`<div class="actions"><button class="btn small ai" data-act="aiConcl" data-id="${rep.id}">${IC.spark} Redactar con IA</button></div>`:""}</section>`;
-  return `<div class="phead"><div><button class="link" data-act="nav" data-v="informes">← Informes</button><div class="eyebrow" style="margin-top:8px">${rep.id} · del ${fd(rep.desde)} al ${fd(rep.hasta)}</div><h1>${REPS[rep.tipo]}</h1></div>
+  return `<div class="phead"><div><button class="link" data-act="nav" data-v="informes">← Informes</button><div class="eyebrow" style="margin-top:8px">${repNo(rep)} · del ${fd(rep.desde)} al ${fd(rep.hasta)}</div><h1>${REPS[rep.tipo]}</h1></div>
   <div class="actions">${isCons()?"":flujoChip(rep.flujo)}<button class="btn" data-act="pdfRep" data-id="${rep.id}">${IC.pdf} Exportar PDF</button>${flujoBtns(rep,"rep")}</div></div>
   ${ed?`<section class="panel"><div class="form"><label>Cobertura desde<input type="date" id="repDesde" value="${rep.desde}"></label><label>Hasta<input type="date" id="repHasta" value="${rep.hasta}"></label></div></section>`:""}
   ${busyBox("concl","La IA está redactando con los datos del periodo…")}${rep.aiNote?`<div class="note ok">${esc(rep.aiNote)}</div>`:""}

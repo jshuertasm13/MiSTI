@@ -29,11 +29,41 @@ async function hashPass(pass,salt){
   try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(txt));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
   catch(e){let h=5381;for(let i=0;i<txt.length;i++)h=((h<<5)+h+txt.charCodeAt(i))|0;return "x"+(h>>>0).toString(16);}
 }
+const DATA_V=2;
 async function cargarDatos(){
   try{const raw=localStorage.getItem(LS);D=raw?JSON.parse(raw):null;}catch(e){D=null;}
-  if(!D||D.v!==1){D=await seedDatos();
+  if(!D||!D.v||D.v>DATA_V){D=await seedDatos();
     for(const[k,v]of Object.entries(D.ensSeed||{})){try{if(!localStorage.getItem(k))localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-    delete D.ensSeed;save();}
+    delete D.ensSeed;}
+  await migrarDatos();save();
+}
+/* Actualiza los datos guardados en el navegador sin perder usuarios ni empresas */
+async function migrarDatos(){
+  if(D.v<2&&D.demo){
+    /* un solo proyecto de demostración */
+    const quitar=D.proyectos.filter(p=>p.id==="P1"||p.id==="P2");
+    quitar.forEach(p=>{for(const k of["concreto","mamposteria"])for(const s of["","-resumen"])localStorage.removeItem(`mi-sti-ens-${k}-${p.id}${s}`);});
+    D.proyectos=D.proyectos.filter(p=>!quitar.includes(p));
+    if(!D.proyectos.some(p=>p.id==="P3")){const PE=proyectoEnsayo();D.proyectos.unshift(PE.P);for(const[k,v]of Object.entries(PE.ens))if(!localStorage.getItem(k))localStorage.setItem(k,JSON.stringify(v));}
+    /* usuarios de ejemplo sobrantes: solo se quitan si siguen sin cambios */
+    const demo={u2:["director2","Carlos Mejía Ríos"],u4:["residente2","Camila Ortiz Pava"],u6:["constructor2","Paula Cárdenas"]};
+    for(const[id,[usr,nom]]of Object.entries(demo)){const u=D.usuarios.find(x=>x.id===id);if(!u)continue;
+      if(u.usuario===usr&&u.nombre===nom&&u.pass===await hashPass(DEMO_PASS,u.salt)){D.usuarios=D.usuarios.filter(x=>x!==u);}}
+    const ids=new Set(D.usuarios.map(u=>u.id));
+    D.proyectos.forEach(p=>{p.miembros=(p.miembros||[]).filter(m=>ids.has(m.uid));
+      if(p.id==="P3"){const keep=[];for(const rol of["director","residente","constructor"]){const m=p.miembros.find(x=>x.rol===rol&&x.uid!=="u0");if(m)keep.push(m);}
+        if(p.miembros.some(x=>x.uid==="u0"))keep.push(p.miembros.find(x=>x.uid==="u0"));p.miembros=keep;}});
+  }
+  for(const p of D.proyectos||[]){
+    (p.inspecciones||[]).forEach(normInsp);
+    /* consecutivo independiente por tipo de informe */
+    if((p.informes||[]).some(r=>!/^(IS|AM|CTO)-/.test(r.id))){
+      const nuevo=r=>/^(IS|AM|CTO)-/.test(r.id);const n={};
+      for(const t of["semanal","mensual","final"])n[t]=Math.max(0,...p.informes.filter(r=>r.tipo===t&&nuevo(r)).map(r=>parseInt(r.id.replace(/^\D+/,""),10)||0));
+      p.informes.slice().sort((a,b)=>(a.creado||"").localeCompare(b.creado||"")||(a.desde||"").localeCompare(b.desde||"")).forEach(r=>{if(nuevo(r))return;const old=r.id;r.id=REPP[r.tipo]+String(++n[r.tipo]).padStart(2,"0");
+        (p.actividad||[]).forEach(a=>{a.t=a.t.split(old+" ").join(r.id+" ");});});}
+  }
+  D.v=DATA_V;
 }
 function save(){try{localStorage.setItem(LS,JSON.stringify(D));}catch(e){toast("No se pudo guardar en este navegador (espacio lleno).");}}
 let SES=(()=>{try{return JSON.parse(localStorage.getItem(LS_SES)||"null")||{};}catch(e){return{};}})();
@@ -55,11 +85,11 @@ function logout(){SES={};saveSes();}
    ============================================================ */
 const esOwner=()=>ME()?.rol==="owner";
 const esAdmin=()=>!!ME()?.esAdmin;
-function proyectosVisibles(){const me=ME();if(!me)return[];
+function proyectosVisibles(){const me=ME();if(!me||!D)return[];
   return D.proyectos.filter(p=>(p.miembros||[]).some(m=>m.uid===me.id)||(me.esAdmin&&p.empresaId===me.empresaId));}
 function rolEn(p){const me=ME();if(!me||!p)return null;const m=(p.miembros||[]).find(x=>x.uid===me.id);if(m)return m.rol;
   if(me.esAdmin&&p.empresaId===me.empresaId)return"director";return null;}
-const P=()=>{if(!SES.pid)return null;const p=D.proyectos.find(x=>x.id===SES.pid);return p&&rolEn(p)?p:null;};
+const P=()=>{if(!SES.pid||!D)return null;const p=D.proyectos.find(x=>x.id===SES.pid);return p&&rolEn(p)?p:null;};
 const ROL=()=>rolEn(P());
 const canEdit=()=>ROL()==="director"||ROL()==="residente";
 const canApprove=()=>ROL()==="director";
@@ -97,6 +127,23 @@ const IDB={db:null,
   async put(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("f","readwrite");tx.objectStore("f").put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
   async del(k){const db=await this.open();return new Promise(res=>{const tx=db.transaction("f","readwrite");tx.objectStore("f").delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();});},
   async all(){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("f");const st=tx.objectStore("f");const ks=st.getAllKeys(),vs=st.getAll();tx.oncomplete=()=>res(ks.result.map((k,i)=>[k,vs.result[i]]));tx.onerror=()=>rej(tx.error);});}};
+/* Archivos adjuntos (documentos y certificados): se guardan en este navegador */
+const ARCH={db:null,
+  async open(){if(this.db)return this.db;this.db=await new Promise((res,rej)=>{const r=indexedDB.open("mi-sti-archivos",1);r.onupgradeneeded=()=>r.result.createObjectStore("a");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});return this.db;},
+  async put(k,v){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("a","readwrite");tx.objectStore("a").put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
+  async get(k){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("a");const r=tx.objectStore("a").get(k);tx.oncomplete=()=>res(r.result||null);tx.onerror=()=>rej(tx.error);});},
+  async del(k){const db=await this.open();return new Promise(res=>{const tx=db.transaction("a","readwrite");tx.objectStore("a").delete(k);tx.oncomplete=()=>res();tx.onerror=()=>res();});},
+  async all(){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction("a");const st=tx.objectStore("a");const ks=st.getAllKeys(),vs=st.getAll();tx.oncomplete=()=>res(ks.result.map((k,i)=>[k,vs.result[i]]));tx.onerror=()=>rej(tx.error);});}};
+async function guardarArchivo(file){const id=uid("arch");await ARCH.put(id,{blob:file,nombre:file.name,tipo:file.type||"application/octet-stream"});return{id,nombre:file.name,tipo:file.type||"",tam:file.size,fecha:TODAY};}
+const tamTxt=b=>b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(b/1024))+" kB";
+async function abrirArchivo(meta,descargar){const r=await ARCH.get(meta.id).catch(()=>null);
+  if(!r){toast("El archivo no está en este navegador: se cargó desde otro equipo o se borraron los datos del navegador.");return;}
+  const blob=r.blob instanceof Blob?r.blob:new Blob([r.blob],{type:r.tipo});
+  if(descargar){await saveBlob(blob,meta.nombre);return;}
+  const url=URL.createObjectURL(blob);const w=window.open(url,"_blank");if(!w)await saveBlob(blob,meta.nombre);setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function archivoHTML(rec,kind,ed){const a=rec.archivo;
+  return `<section class="adjunto"><h3>${IC.clip} Archivo adjunto</h3>${a?`<div class="adj-row"><div><b>${esc(a.nombre)}</b><span class="sub">${a.tam?tamTxt(a.tam)+" · ":""}cargado el ${fd(a.fecha||rec.fecha)}</span></div><div class="actions"><button class="btn small" data-act="verArch" data-k="${kind}" data-id="${rec.id}">Ver</button><button class="btn small" data-act="bajarArch" data-k="${kind}" data-id="${rec.id}">Descargar</button>${ed?`<label class="btn small">Reemplazar<input type="file" hidden data-arch="${kind}" data-id="${rec.id}"></label>`:""}</div></div>`
+    :`<div class="adj-row"><span class="muted">Sin archivo adjunto.</span>${ed?`<label class="btn small">${IC.up} Adjuntar archivo<input type="file" hidden data-arch="${kind}" data-id="${rec.id}"></label>`:""}</div>`}</section>`;}
 async function compress(file,max=1280){
   const url=URL.createObjectURL(file);
   try{const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url;});
@@ -309,7 +356,7 @@ async function exportPDF(html,filename){
   try{await loadScript(H2P);}catch(e){toast("No se pudo cargar el generador de PDF.");return;}
   const el=document.createElement("div");el.className="pdfdoc";el.innerHTML=html;
   let blob;
-  try{blob=await window.html2pdf().set({margin:[10,10,12,10],image:{type:"jpeg",quality:0.92},html2canvas:{scale:2,backgroundColor:"#ffffff",useCORS:true},jsPDF:{unit:"mm",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","figure","p",".firmas",".hdr",".pgrid figure",".pgrid2 figure","h2"]}}).from(el).outputPdf("blob");}
+  try{blob=await window.html2pdf().set({margin:[10,10,12,10],image:{type:"jpeg",quality:0.92},html2canvas:{scale:2,scrollX:0,scrollY:0,backgroundColor:"#ffffff",useCORS:true},jsPDF:{unit:"mm",format:"letter",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:["tr","figure","p",".firmas",".hdr",".pgrid figure",".pgrid2 figure","h2"]}}).from(el).outputPdf("blob");}
   catch(e){toast("No se pudo generar el PDF.");return;}
   if(await saveBlob(blob,filename+".pdf"))toast("PDF listo.");
 }
@@ -318,17 +365,32 @@ const fname=(...p)=>p.map(slug).filter(Boolean).join("_").slice(0,120);
 /* ============================================================
    Ensayos: resumen que publican las apps de concreto y mampostería
    ============================================================ */
-const ENS_APPS=[["concreto","Concreto","ensayos/concreto.html"],["mamposteria","Mampostería estructural","ensayos/mamposteria.html"]];
-const ensAppsDe=p=>ENS_APPS.filter(a=>a[0]==="concreto"||(p.sistemas||[]).includes("mamposteria"));
+/* Ensayos: módulos de concreto y mampostería que se muestran dentro de Mi STI (js/ens-*.js) */
+const ENS_TIPOS=[["concreto","concreto","Concreto"],["mortero","mamposteria","Mortero de pega"],["grout","mamposteria","Grouting"],["unidad","mamposteria","Unidades de mampostería"],["murete","mamposteria","Muretes"]];
+const tieneMamp=p=>(p.sistemas||[]).includes("mamposteria");
+const ensTiposDe=p=>ENS_TIPOS.filter(t=>t[1]==="concreto"||tieneMamp(p));
+const ensAppsDe=p=>[["concreto"],...(tieneMamp(p)?[["mamposteria"]]:[])];
 function resumenEns(p){const out=[];let act="";
-  for(const[k]of ensAppsDe(p)){try{const r=JSON.parse(localStorage.getItem(`mi-sti-ens-${k}-${p.id}-resumen`)||"null");if(r){out.push(...(r.rows||[]).map(x=>Object.assign({app:k},x)));if(r.act>act)act=r.act;}}catch(e){}}
+  for(const[k]of ensAppsDe(p)){try{const r=JSON.parse(localStorage.getItem(`mi-sti-ens-${k}-${p.id}-resumen`)||"null");if(r){out.push(...(r.rows||[]).filter(x=>!(k==="mamposteria"&&x.tipo==="concreto")).map(x=>Object.assign({app:k},x)));if(r.act>act)act=r.act;}}catch(e){}}
   return{rows:out,act};}
 const EST_ENS={cumple:["Cumple","c-good"],aceptable:["Aceptable NSR","c-warn"],prombajo:["Promedio bajo","c-serious"],nocumple:["No cumple","c-crit"],pendiente:["Pendiente","" ],vencido:["Rotura atrasada","c-late"],aprobada:["Aprobada por concepto","c-good"]};
 const estEnsChip=k=>{const x=EST_ENS[k]||[k,""];return`<span class="chip ${x[1]}">${esc(x[0])}</span>`;};
-/* Calcula el resumen de ensayos de los proyectos que tienen datos y aún no lo tienen,
-   abriendo la app de ensayos en un marco oculto (la app lo publica al cargar). */
+/* El módulo corre aislado (Shadow DOM): "document" apunta a su propia raíz */
+function shimDoc(root,signal){return{
+  getElementById:id=>root.getElementById(id),
+  querySelector:q=>root.querySelector(q)||document.querySelector(q),
+  querySelectorAll:q=>root.querySelectorAll(q),
+  createElement:(...a)=>document.createElement(...a),createElementNS:(...a)=>document.createElementNS(...a),createTextNode:t=>document.createTextNode(t),
+  addEventListener:(t,f,o)=>(t==="keydown"?document:root).addEventListener(t,f,{signal}),
+  get body(){return document.body},get head(){return document.head},get documentElement(){return document.documentElement}};}
+function ctxEns(p,tab,onChange){return{p:p.id,proyecto:p.nombre||"",obra:"",constructora:p.constructora||"",laboratorio:"",zonas:zonasDe(p),tab,onChange,embebida:true};}
+function montarEnsayo(host,app,ctx){const M=(window.ENS_MOD||{})[app];if(!M){host.innerHTML='<div class="empty">No se pudo cargar el módulo de ensayos.</div>';return{destroy(){}};}
+  const t=temaEns();host.style.setProperty("--accent",t.accent);host.style.setProperty("--accent-ink",t.accentInk);host.style.setProperty("--accent-soft",t.accentSoft);
+  const root=host.attachShadow({mode:"open"});root.innerHTML=`<style>${M.css}</style><div class="ensbody">${M.html}</div>`;
+  const ac=new AbortController();let api={};try{api=M.run(root,ctx,shimDoc(root,ac.signal))||{};}catch(e){console.error(e);}
+  api.destroy=()=>ac.abort();return api;}
+/* Calcula el resumen de los proyectos que tienen ensayos guardados y aún no lo tienen */
 function calentarEnsayos(){if(!D)return;
-  for(const p of D.proyectos||[])for(const[k,,src]of ensAppsDe(p)){const key=`mi-sti-ens-${k}-${p.id}`;
-    if(localStorage.getItem(key)&&!localStorage.getItem(key+"-resumen")){const f=document.createElement("iframe");f.setAttribute("aria-hidden","true");f.tabIndex=-1;
-      f.style.cssText="position:absolute;width:1px;height:1px;left:-9999px;border:0";f.src=ensURL(p,src);document.body.appendChild(f);setTimeout(()=>f.remove(),20000);}}}
-function ensURL(p,app){const q=new URLSearchParams({p:p.id,proy:p.nombre||"",cons:p.constructora||"",zonas:JSON.stringify(zonasDe(p)),th:JSON.stringify(temaEns())});return `${app}?${q}`;}
+  for(const p of D.proyectos||[])for(const[k]of ensAppsDe(p)){const key=`mi-sti-ens-${k}-${p.id}`;
+    if(localStorage.getItem(key)&&!localStorage.getItem(key+"-resumen")){const h=document.createElement("div");h.style.cssText="position:absolute;left:-9999px;top:0;width:900px;height:10px;overflow:hidden";h.setAttribute("aria-hidden","true");document.body.appendChild(h);
+      const api=montarEnsayo(h,k,ctxEns(p,k==="mamposteria"?"mortero":null,null));setTimeout(()=>{api.destroy();h.remove();if(ME()&&P()&&P().id===p.id)render();},1500);}}}

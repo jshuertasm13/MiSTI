@@ -14,6 +14,7 @@ const IC={
   firm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13"/><path d="M8 7V4h8v3M3 12h18"/></svg>',
   spark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 5.6L19.5 9l-5.7 1.6L12 16l-1.8-5.4L4.5 9l5.7-1.4z"/><path d="M19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>',
   up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>',
+  clip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.4 3.4 0 0 1 4.8 4.8l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg>',
   pdf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M12 10v7M9 14l3 3 3-3"/></svg>',
   users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16.5 14.2c2.6.2 4.4 2 5 4.8"/></svg>',
   box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>',
@@ -237,7 +238,7 @@ function proyectoEnsayo(){
   const P={id:"P3",nombre:"Proyecto de ensayo · Edificio Muestra",direccion:"Calle 00 # 00-00",municipio:"Pereira, Risaralda",propietario:"Promotora Muestra S.A.S.",constructora:"Constructora Demo S.A.S.",directorObra:"Ing. Mateo Rincón Salazar",
     licencia:"66001-0-26-0500",curaduria:"Curaduría Urbana No. 2 de Pereira",area:"6.450 m²",unidades:"72 apartamentos",inicio:"2026-07-20",contrato:"Contrato STI 030-2026",
     sistemas:["dual","mamposteria"],torres:["Torre 1","Torre 2"],empresaId:"E1",
-    miembros:[{uid:"u1",rol:"director"},{uid:"u2",rol:"director"},{uid:"u3",rol:"residente"},{uid:"u4",rol:"residente"},{uid:"u5",rol:"constructor"},{uid:"u6",rol:"constructor"},{uid:"u0",rol:"director"}],
+    miembros:[{uid:"u1",rol:"director"},{uid:"u3",rol:"residente"},{uid:"u5",rol:"constructor"},{uid:"u0",rol:"director"}],
     documentos:[
       {id:"D01",tipo:"licencia",nombre:"Licencia de construcción 66001-0-26-0500",version:"1",fecha:"2026-06-30",vence:"2028-06-30",flujo:"aprobado",
         datos:{"Número":"66001-0-26-0500","Curaduría":"Curaduría Urbana No. 2 de Pereira","Fecha de expedición":"30 jun 2026","Vigencia":"24 meses","Titular":"Promotora Muestra S.A.S.","Área construida":"6.450 m²","Unidades":"72 apartamentos","Uso":"Vivienda multifamiliar"}},
@@ -272,13 +273,13 @@ function proyectoEnsayo(){
       {id:"I-12",fecha:"2026-11-11",torre:"Torre 1",nivel:"Piso 4",tipo:"muros",ident:"Pantallas ejes 1 y 6",resp:full("muros"),fotos:["demo-11"],conforme:"2026-11-11",obs:""},
       {id:"I-13",fecha:"2026-11-13",torre:"Torre 2",nivel:"Piso 4",tipo:"mamposteria",ident:"Muros de bloque, ejes 1–5 / A–C",resp:full("mamposteria",{"antes-2":{e:"NC",fix:"2026-11-13",obs:"Refuerzo horizontal de escalerilla faltante en dos hiladas; se completó y se verificó."}}),fotos:[],conforme:"2026-11-13",obs:""},
       {id:"I-14",fecha:"2026-11-17",torre:"Torre 1",nivel:"Piso 5",tipo:"columnas",ident:"Columnas C1–C18",resp:full("columnas",{"antes-4":{e:"NC",obs:"C2 y C15 con traslapos de 40 cm en la zona confinada inferior; el plano exige traslapo en el tercio medio."}}),fotos:["demo-12","demo-13"],conforme:"",obs:""},
-      {id:"I-15",fecha:"2026-11-18",torre:"Torre 1",nivel:"Placa piso 5",tipo:"vigaslosa",ident:"Placa completa, ejes 1–6 / A–D",resp:antes("vigaslosa"),fotos:[],conforme:"",obs:"Armado revisado; pendiente el control durante el vaciado."}],
+      {id:"I-15",fecha:"2026-11-18",torre:"Torre 1",nivel:"Placa piso 5",tipo:"vigaslosa",ident:"Placa completa, ejes 1–6 / A–D",resp:antes("vigaslosa"),fotos:[],conforme:"",conf:{antes:"2026-11-18",durante:"",despues:""},obs:"Armado revisado; pendiente el control durante el vaciado."}],
     nc:[
       {id:"NC-01",fecha:"2026-08-19",origen:"Inspección I-03",torre:"Torre 1",ubic:"Columna C6, piso 1",titulo:"Estribos de C6 más separados que en el diseño",descripcion:"En la columna C6 los estribos de la zona confinada están a 14 cm; el plano indica 10 cm.",numeral:"NSR-10 C.21.6.4",requerida:"Reubicar los estribos a 10 cm y revisar las demás columnas del nivel.",limite:"2026-08-21",fotos:["demo-8"],estado:"cerrada",flujo:"aprobado",insp:"I-03",item:"antes-5",cierre:"2026-08-20",
         resp:[{id:"R1",fecha:"2026-08-20",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se reubicaron los estribos de C6 a 10 cm y se revisaron las 18 columnas del nivel.",preventiva:"El maestro de obra verifica con flexómetro la separación de estribos antes de pedir la revisión.",fotos:["demo-15"],veredicto:"aceptada",obs:"Verificado en obra.",fechaV:"2026-08-20"}]},
-      {id:"NC-02",fecha:"2026-10-09",origen:"Ensayo de concreto, muestra 6",muestra:"6",torre:"Torre 1",ubic:"Pantallas piso 2, ejes 1 y 6",titulo:"Resistencia a 28 días bajo el límite en pantallas del piso 2",descripcion:"La muestra 6 dio 16,8 MPa a 28 días, por debajo del límite individual de 17,5 MPa para f'c 21 MPa.",numeral:"NSR-10 C.5.6.3.3 (b) y C.5.6.5",requerida:"Extraer núcleos en las pantallas representadas por la muestra y presentar el concepto del diseñador estructural.",limite:"2026-11-09",fotos:[],estado:"respondida",flujo:"aprobado",
+      {id:"NC-02",fecha:"2026-10-09",origen:"Ensayo de concreto, muestra 6",muestra:"6",ensayo:"concreto:6",torre:"Torre 1",ubic:"Pantallas piso 2, ejes 1 y 6",titulo:"Resistencia a 28 días bajo el límite en pantallas del piso 2",descripcion:"La muestra 6 dio 16,8 MPa a 28 días, por debajo del límite individual de 17,5 MPa para f'c 21 MPa.",numeral:"NSR-10 C.5.6.3.3 (b) y C.5.6.5",requerida:"Extraer núcleos en las pantallas representadas por la muestra y presentar el concepto del diseñador estructural.",limite:"2026-11-09",fotos:[],estado:"respondida",flujo:"aprobado",
         resp:[{id:"R1",fecha:"2026-11-06",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se extrajeron 3 núcleos en las pantallas del piso 2 (promedio corregido 19,6 MPa). Se adjunta el concepto del diseñador, que acepta la resistencia obtenida.",preventiva:"Se reforzó el control de asentamiento y de agua adicionada en obra.",fotos:["demo-16"],veredicto:"",obs:""}]},
-      {id:"NC-03",fecha:"2026-10-14",origen:"Ensayo de grouting, muestra GR-02",muestra:"GR-02",torre:"Torre 2",ubic:"Muros piso 2, ejes 1–5",titulo:"Grouting bajo el límite individual en muros del piso 2",descripcion:"La muestra GR-02 dio 13,6 MPa a 28 días; el límite individual para f'cr 17,5 MPa es 14,0 MPa.",numeral:"NSR-10 D.3.7",requerida:"Presentar un plan de verificación (extracción de muretes o núcleos) y el concepto del diseñador.",limite:"2026-11-10",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
+      {id:"NC-03",fecha:"2026-10-14",origen:"Ensayo de grouting, muestra GR-02",muestra:"GR-02",ensayo:"mamposteria:GR-02",torre:"Torre 2",ubic:"Muros piso 2, ejes 1–5",titulo:"Grouting bajo el límite individual en muros del piso 2",descripcion:"La muestra GR-02 dio 13,6 MPa a 28 días; el límite individual para f'cr 17,5 MPa es 14,0 MPa.",numeral:"NSR-10 D.3.7",requerida:"Presentar un plan de verificación (extracción de muretes o núcleos) y el concepto del diseñador.",limite:"2026-11-10",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
       {id:"NC-04",fecha:"2026-11-04",origen:"Inspección I-11",torre:"Torre 2",ubic:"Muros eje B, piso 3",titulo:"Dovelas obstruidas con rebabas de mortero",descripcion:"En los muros del eje B las celdas a inyectar tienen rebabas de mortero que impiden el paso del grouting.",numeral:"NSR-10 D.4.6",requerida:"Limpiar las celdas por las ventanas de inspección antes de inyectar y presentar fotos de cada ventana.",limite:"2026-11-25",fotos:["demo-10"],estado:"abierta",flujo:"aprobado",insp:"I-11",item:"antes-3",
         resp:[{id:"R1",fecha:"2026-11-08",autor:"Ing. Mateo Rincón Salazar",correctiva:"Se limpiaron las celdas con varilla.",preventiva:"",fotos:[],veredicto:"rechazada",obs:"En la verificación aún había rebabas en 3 celdas y no se abrieron ventanas de limpieza. Se debe repetir con ventanas y fotos.",fechaV:"2026-11-10"}]},
       {id:"NC-05",fecha:"2026-11-12",origen:"Revisión documental",torre:"General",ubic:"Memoria de elementos no estructurales",titulo:"Falta el diseño del anclaje de antepechos",descripcion:"La memoria de elementos no estructurales no incluye el anclaje de antepechos y fachadas al sistema estructural.",numeral:"NSR-10 A.9",requerida:"Presentar la memoria complementada y firmada por el diseñador.",limite:"2026-11-28",fotos:[],estado:"abierta",flujo:"aprobado",resp:[]},
@@ -291,23 +292,23 @@ function proyectoEnsayo(){
     fotoDesc:{},
     avance:[{act:"Cimentación Torre 1",pct:100},{act:"Estructura Torre 1",pct:48},{act:"Cimentación Torre 2",pct:100},{act:"Mampostería estructural Torre 2",pct:62},{act:"Placas Torre 2",pct:55}],
     informes:[
-      {id:"INF-01",tipo:"mensual",desde:"2026-09-01",hasta:"2026-09-30",creado:"2026-10-01",flujo:"aprobado",
+      {id:"AM-01",tipo:"mensual",desde:"2026-09-01",hasta:"2026-09-30",creado:"2026-10-01",flujo:"aprobado",
         txtCert:"Se recibió y revisó el certificado del mortero de pega premezclado, conforme a la NTC 3329.",txtEns:"Las roturas a 28 días del periodo cumplen, salvo la muestra 6 de las pantallas del piso 2, que está por debajo del límite individual.",
         txtInsp:"Se revisaron la mampostería del piso 1 de la Torre 2, la placa del piso 2 de ambas torres y la escalera; todos los elementos quedaron conformes.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",10,22],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",0,18],["Placas Torre 2",0,15]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-9","demo-17"],concl:"El avance de septiembre fue conforme al programa.\n- Gestionar con el laboratorio las roturas a 28 días de octubre.\n- Mantener el control de distanciadores en columnas."},
-      {id:"INF-02",tipo:"mensual",desde:"2026-10-01",hasta:"2026-10-31",creado:"2026-11-01",flujo:"aprobado",
+      {id:"AM-02",tipo:"mensual",desde:"2026-10-01",hasta:"2026-10-31",creado:"2026-11-01",flujo:"aprobado",
         txtCert:"Se recibió el certificado de la malla electrosoldada D-131.",txtEns:"Se generó la NC-02 por la muestra 6 y la NC-03 por el grouting GR-02. La muestra 8 queda con promedio bajo y se sigue de cerca.",
         txtInsp:"Se revisaron las columnas del piso 3 y la placa del piso 4 de la Torre 1; se hizo corregir la falta de distanciadores en dos columnas.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",22,38],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",18,45],["Placas Torre 2",15,35]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-14","demo-18"],concl:"Quedan abiertas dos no conformidades por resistencia (NC-02 y NC-03).\n- Presentar núcleos y concepto del diseñador para la NC-02.\n- Presentar el plan de verificación del grouting para la NC-03."},
-      {id:"INF-03",tipo:"semanal",desde:"2026-11-09",hasta:"2026-11-15",creado:"2026-11-16",flujo:"aprobado",
+      {id:"IS-01",tipo:"semanal",desde:"2026-11-09",hasta:"2026-11-15",creado:"2026-11-16",flujo:"aprobado",
         txtInsp:"Se revisaron las pantallas del piso 4 de la Torre 1 y la mampostería del piso 4 de la Torre 2. En la Torre 2 se hizo completar el refuerzo de escalerilla antes de continuar.",
         aspectos:"Completar el refuerzo horizontal de escalerilla en todas las hiladas indicadas en planos.\nLimpiar las dovelas por ventanas de inspección antes de inyectar.",
         txtDoc:"Se recibió la revisión 1.1 de los planos de la Torre 2 con el detalle de dovelas.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",42,45],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",55,58],["Placas Torre 2",45,50]].map(([act,ant,pct])=>({act,ant,pct})),
         fotos:["demo-11","demo-19"],concl:"",txtCert:"",txtEns:""},
-      {id:"INF-04",tipo:"semanal",desde:"2026-11-16",hasta:"2026-11-22",creado:"2026-11-18",flujo:"borrador",
+      {id:"IS-02",tipo:"semanal",desde:"2026-11-16",hasta:"2026-11-22",creado:"2026-11-18",flujo:"borrador",
         txtInsp:"Se revisaron las columnas del piso 5 de la Torre 1, con traslapos mal ubicados en dos columnas (NC-06), y el armado de la placa del piso 5.",
         aspectos:"Columnas piso 5, Torre 1: ubicar los traslapos en el tercio medio.",txtDoc:"Se recibió la póliza de responsabilidad civil, en revisión.",
         avance:[["Cimentación Torre 1",100,100],["Estructura Torre 1",45,48],["Cimentación Torre 2",100,100],["Mampostería estructural Torre 2",58,62],["Placas Torre 2",50,55]].map(([act,ant,pct])=>({act,ant,pct})),
@@ -315,7 +316,7 @@ function proyectoEnsayo(){
     actividad:[
       {f:"2026-11-18",q:"Andrés Ruiz",t:"Inspección de la placa del piso 5, Torre 1: armado revisado."},
       {f:"2026-11-17",q:"Andrés Ruiz",t:"No conformidad NC-06 en borrador."},
-      {f:"2026-11-16",q:"Laura Gómez",t:"Informe INF-03 aprobado: informe semanal."},
+      {f:"2026-11-16",q:"Laura Gómez",t:"Informe IS-01 aprobado: informe semanal."},
       {f:"2026-11-10",q:"Laura Gómez",t:"Respuesta a NC-04 rechazada."},
       {f:"2026-11-06",q:"Mateo Rincón",t:"Respuesta del constructor a NC-02."}]};
   /* Ensayos (los leen las apps de concreto y mampostería) */
@@ -360,11 +361,8 @@ async function seedDatos(){
   const usuarios=[
     await u("u0","admin","Administrador Mi STI","owner",{cargo:"Dueño de la plataforma"},OWNER_PASS),
     await u("u1","admin.demo","Laura Gómez Arango","director",{empresaId:"E1",esAdmin:true,cargo:"Directora STI",profesion:"Ingeniera civil",matricula:"66202-000001 RIS"}),
-    await u("u2","director2","Carlos Mejía Ríos","director",{empresaId:"E1",cargo:"Director STI",profesion:"Ingeniero civil",matricula:"66202-000005 RIS"}),
     await u("u3","residente1","Andrés Ruiz Henao","residente",{empresaId:"E1",cargo:"Residente STI",profesion:"Ingeniero civil",matricula:"66202-000002 RIS"}),
-    await u("u4","residente2","Camila Ortiz Pava","residente",{empresaId:"E1",cargo:"Residente STI",profesion:"Ingeniera civil",matricula:"66202-000006 RIS"}),
     await u("u5","constructor1","Mateo Rincón Salazar","constructor",{empresaId:"E1",cargo:"Director de obra",constructora:"Constructora Demo S.A.S."}),
-    await u("u6","constructor2","Paula Cárdenas","constructor",{empresaId:"E1",cargo:"Directora de obra",constructora:"Obras Demo Ltda."}),
     await u("u7","admin.ejemplo","Jorge Salas Duque","director",{empresaId:"E2",esAdmin:true,cargo:"Director STI",profesion:"Ingeniero civil",matricula:"17202-000020 CLD"})];
   const empresas=[
     {id:"E1",razon:F.razon,nit:F.nit,rep:F.rep,dir:F.dir,ciudad:F.ciudad,tel:F.tel,correo:F.correo,logo:"",paleta:{id:"pizarra"},creada:"2026-01-10",activa:true},
@@ -410,6 +408,6 @@ async function seedDatos(){
     avance:[["Cimentación Torre A",100,100],["Estructura Torre A",22,30],["Cimentación Torre B",95,100],["Estructura Torre B",14,22],["Mampostería Torre A",0,0]].map(([act,ant,pct])=>({act,ant,pct})),
     fotos:[],concl:"La rotura a 28 días de las columnas del piso 3 sigue pendiente y debe gestionarse con el laboratorio.\n- Gestionar con el laboratorio la rotura atrasada.\n- Presentar los núcleos y el concepto del diseñador para cerrar NC-03."}];
   P2.informes=[];
-  const PE=proyectoEnsayo();Object.assign(ensSeed,PE.ens);
-  return{v:1,demo:true,creado:TODAY,usuarios,empresas,proyectos:[PE.P,P1,P2],ensSeed};
+  const PE=proyectoEnsayo();
+  return{v:DATA_V,demo:true,creado:TODAY,usuarios,empresas,proyectos:[PE.P],ensSeed:PE.ens};
 }

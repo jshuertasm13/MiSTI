@@ -9,10 +9,9 @@ Es un sitio estático (HTML, CSS y JavaScript sin compilación). Se publica dire
 | Usuario | Contraseña | Rol |
 |---|---|---|
 | `admin` | `admin1234` | Dueño de la plataforma: crea empresas y usuarios administradores |
-| `admin.demo` | `demo1234` | Administrador de la empresa *Firma Demo* (también directora) |
-| `director2` | `demo1234` | Director STI |
-| `residente1`, `residente2` | `demo1234` | Residentes STI |
-| `constructor1`, `constructor2` | `demo1234` | Constructores: solo lectura y respuesta a no conformidades |
+| `admin.demo` | `demo1234` | Administradora de la empresa *Firma Demo* y directora del proyecto |
+| `residente1` | `demo1234` | Residente STI |
+| `constructor1` | `demo1234` | Constructor: solo lectura y respuesta a no conformidades |
 | `admin.ejemplo` | `demo1234` | Administrador de otra empresa (*Ingeniería Ejemplo*) |
 
 El proyecto **«Proyecto de ensayo · Edificio Muestra»** trae un ejemplo de cada registro: documentos en todos los estados, certificados aprobados, en revisión y devueltos, ensayos de concreto, mortero, grouting, unidades y muretes en todos los estados (cumple, aceptable, promedio bajo, no cumple, pendiente, rotura atrasada, aprobada por concepto), inspecciones de cada tipo de elemento, no conformidades en cada estado, dos actas mensuales, dos informes semanales y registro fotográfico. El dueño de la plataforma (`admin`) está agregado como miembro para poder verlo.
@@ -53,14 +52,21 @@ js/datos.js           Catálogos, listas de chequeo y datos de demostración
 js/core.js            Utilidades, sesión, permisos, paletas, fotos, IA, PDF
 js/vistas.js          Pantallas
 js/acciones.js        Eventos y acciones
-ensayos/              Apps de ensayos de concreto y de mampostería (se abren dentro de Mi STI)
+js/ens-concreto.js    Módulo de ensayos de concreto (generado desde ensayos/concreto.html)
+js/ens-mamposteria.js Módulo de ensayos de mampostería (generado desde ensayos/mamposteria.html)
+ensayos/              Apps originales de ensayos (también funcionan solas)
+herramientas/         modularizar_ensayos.py: genera los módulos de ensayos
 vendor/               Librerías incluidas: pdf.js, html2pdf, SheetJS (con sus licencias)
 ```
 
+## Datos guardados y actualizaciones
+
+Cuando se publica una versión nueva, la app actualiza los datos guardados en el navegador sin borrar usuarios, empresas ni proyectos (ver `migrarDatos` en `js/core.js`). Los archivos adjuntos de documentos y certificados se guardan en el navegador y se incluyen en el respaldo.
+
 ## Actualizar las apps de ensayos
 
-Cuando haya una versión nueva de las apps de ensayos, se integran con la herramienta `integrar_ensayos.py` (se guarda fuera del repositorio porque contiene los textos originales que reemplaza):
+Los ensayos se ven dentro de Mi STI (resumen arriba y pestañas por tipo de ensayo). Para integrar una versión nueva de las apps:
 
-```
-python3 integrar_ensayos.py concreto_original.html mamposteria_original.html ruta/al/repo/mi-sti
-```
+1. Integrar la app original con `integrar_ensayos.py` (se guarda fuera del repositorio porque contiene los textos originales que reemplaza):
+   `python3 integrar_ensayos.py concreto_original.html mamposteria_original.html ruta/al/repo/mi-sti`
+2. Generar los módulos: `python3 herramientas/modularizar_ensayos.py`
