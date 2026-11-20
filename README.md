@@ -47,6 +47,8 @@ Cada empresa puede pegar su propia clave de API de Anthropic en **Mi empresa**. 
 
 ```
 index.html            Página principal
+manifest.webmanifest  Nombre e íconos para instalar la app (Mi STI)
+icons/                Íconos de la app (favicon, Android, iPhone)
 css/app.css           Estilos (la paleta se define por empresa)
 js/datos.js           Catálogos, listas de chequeo y datos de demostración
 js/core.js            Utilidades, sesión, permisos, paletas, fotos, IA, PDF
